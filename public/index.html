@@ -1,0 +1,1600 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0a0014">
+<title>Spyfall</title>
+<style>
+  :root {
+    --bg-0: #0a0014;
+    --bg-1: #150024;
+    --pink: #ff3d9a;
+    --magenta: #d600ff;
+    --cyan: #00e0ff;
+    --yellow: #ffe53b;
+    --orange: #ff7a1a;
+    --red: #ff2d55;
+    --lime: #00ff88;
+    --text: #f5f1ff;
+    --muted: #a89cc4;
+    --glass: rgba(255,255,255,0.06);
+    --glass-strong: rgba(255,255,255,0.10);
+    --border: rgba(255,255,255,0.12);
+    --border-strong: rgba(255,255,255,0.22);
+    --shadow: 0 10px 40px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    background: var(--bg-0);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+    overflow-x: hidden;
+  }
+  body { min-height: 100dvh; }
+
+  /* ===== animated gradient background ===== */
+  .bg {
+    position: fixed; inset: 0; z-index: -2;
+    background: radial-gradient(ellipse at top, #1a0033 0%, #0a0014 60%);
+    overflow: hidden;
+  }
+  .blob {
+    position: absolute; border-radius: 50%;
+    filter: blur(90px); opacity: 0.55;
+    pointer-events: none;
+    will-change: transform;
+  }
+  .blob.b1 { width: 480px; height: 480px; background: var(--pink); top: -160px; left: -120px; animation: drift1 22s ease-in-out infinite; }
+  .blob.b2 { width: 420px; height: 420px; background: var(--cyan); top: 30vh; right: -160px; opacity: 0.40; animation: drift2 26s ease-in-out infinite; }
+  .blob.b3 { width: 360px; height: 360px; background: var(--magenta); bottom: -120px; left: 30vw; opacity: 0.45; animation: drift3 30s ease-in-out infinite; }
+  @keyframes drift1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(80px, 100px) scale(1.15); } }
+  @keyframes drift2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-120px, 60px) scale(1.1); } }
+  @keyframes drift3 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(60px, -80px) scale(1.2); } }
+
+  .grain {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0);
+    background-size: 3px 3px;
+    mix-blend-mode: overlay;
+  }
+
+  /* ===== layout ===== */
+  .app {
+    position: relative;
+    max-width: 540px; margin: 0 auto;
+    padding: 20px 16px calc(24px + env(safe-area-inset-bottom));
+    min-height: 100dvh;
+    display: flex; flex-direction: column;
+  }
+
+  .screen {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    animation: fadeIn 0.35s ease;
+  }
+  .screen.active { display: flex; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== typography ===== */
+  h1, h2, h3 { margin: 0; }
+  h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
+  h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+  h3 { font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  p  { margin: 0; color: var(--muted); line-height: 1.5; }
+  .muted { color: var(--muted); font-size: 14px; }
+
+  .logo {
+    font-size: 56px; font-weight: 900; letter-spacing: -0.04em; line-height: 1;
+    background: linear-gradient(135deg, var(--pink) 0%, var(--magenta) 50%, var(--cyan) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 0 80px rgba(255,61,154,0.35);
+  }
+  .tagline { color: var(--muted); margin-top: 8px; font-size: 16px; }
+
+  /* ===== panels (glass) ===== */
+  .panel {
+    background: var(--glass);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 18px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .panel.tight { padding: 14px; }
+
+  /* ===== buttons ===== */
+  .btn {
+    font: inherit; font-weight: 700; font-size: 16px;
+    border: none; border-radius: 16px;
+    padding: 16px 18px; width: 100%;
+    cursor: pointer; touch-action: manipulation;
+    color: #0a0014;
+    background: linear-gradient(135deg, var(--pink), var(--orange));
+    box-shadow: 0 8px 24px rgba(255,61,154,0.4), inset 0 1px 0 rgba(255,255,255,0.4);
+    transition: transform 0.1s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    letter-spacing: 0.01em;
+  }
+  .btn:hover  { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(255,61,154,0.55), inset 0 1px 0 rgba(255,255,255,0.4); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.35);
+    box-shadow: none; cursor: not-allowed;
+  }
+  .btn.cyan    { background: linear-gradient(135deg, var(--cyan), #4f7dff); box-shadow: 0 8px 24px rgba(0,224,255,0.4); }
+  .btn.cyan:hover { box-shadow: 0 12px 30px rgba(0,224,255,0.55); }
+  .btn.lime    { background: linear-gradient(135deg, var(--lime), var(--cyan)); box-shadow: 0 8px 24px rgba(0,255,136,0.4); color:#001a0d; }
+  .btn.danger  { background: linear-gradient(135deg, var(--red), #ff5a8a); box-shadow: 0 8px 24px rgba(255,45,85,0.4); color: white; }
+  .btn.ghost   { background: var(--glass-strong); color: var(--text); border: 1px solid var(--border-strong); box-shadow: none; }
+  .btn.ghost:hover { background: rgba(255,255,255,0.14); }
+  .btn.compact { padding: 10px 14px; width: auto; font-size: 14px; }
+
+  /* ===== inputs ===== */
+  .input {
+    font: inherit; font-size: 16px; font-weight: 500;
+    background: var(--glass-strong);
+    border: 1.5px solid var(--border-strong);
+    color: var(--text);
+    border-radius: 14px;
+    padding: 14px 16px;
+    width: 100%;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .input:focus { outline: none; border-color: var(--pink); background: rgba(255,255,255,0.14); }
+  .input.code {
+    text-align: center;
+    font-size: 36px; font-weight: 800;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    padding: 18px 8px 18px 22px; /* offset for letter-spacing */
+    font-feature-settings: "tnum";
+  }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 6px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  .row.tight { gap: 6px; }
+  .stack > * + * { margin-top: 10px; }
+  .center { text-align: center; }
+
+  /* ===== home actions ===== */
+  .home-actions {
+    display: flex; flex-direction: column; gap: 12px;
+    margin-top: 28px;
+  }
+  .big-action {
+    border: 1.5px solid rgba(255,255,255,0.18);
+    border-radius: 22px;
+    padding: 22px;
+    cursor: pointer;
+    text-align: left;
+    color: white;
+    font: inherit;
+    width: 100%;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    position: relative; overflow: hidden;
+  }
+  .big-action::after {
+    /* glossy highlight */
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 45%);
+    pointer-events: none;
+  }
+  .big-action > * { position: relative; z-index: 1; }
+  .big-action.create {
+    background: linear-gradient(135deg, #ff3d9a 0%, #d600ff 60%, #6a1aa8 100%);
+    box-shadow: 0 14px 40px rgba(255, 61, 154, 0.45), inset 0 1px 0 rgba(255,255,255,0.35);
+  }
+  .big-action.join {
+    background: linear-gradient(135deg, #00e0ff 0%, #4f7dff 60%, #6a1aa8 100%);
+    box-shadow: 0 14px 40px rgba(0, 224, 255, 0.40), inset 0 1px 0 rgba(255,255,255,0.35);
+  }
+  .big-action:hover {
+    transform: translateY(-3px);
+    filter: brightness(1.08) saturate(1.1);
+  }
+  .big-action.create:hover { box-shadow: 0 18px 48px rgba(255, 61, 154, 0.60), inset 0 1px 0 rgba(255,255,255,0.4); }
+  .big-action.join:hover   { box-shadow: 0 18px 48px rgba(0, 224, 255, 0.55), inset 0 1px 0 rgba(255,255,255,0.4); }
+  .big-action:active { transform: translateY(0); }
+  .big-action .ba-title { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; color: white; }
+  .big-action .ba-sub   { color: rgba(255,255,255,0.85); margin-top: 4px; font-size: 14px; }
+
+  /* ===== room code badge ===== */
+  .code-badge {
+    text-align: center; padding: 22px 18px;
+    background: linear-gradient(135deg, rgba(255,61,154,0.18), rgba(0,224,255,0.18));
+    border: 1.5px solid var(--border-strong);
+    border-radius: 22px;
+  }
+  .code-badge .label-small { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.2em; }
+  .code-badge .code {
+    font-size: 56px; font-weight: 900; letter-spacing: 0.16em;
+    background: linear-gradient(135deg, var(--pink), var(--cyan));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin: 6px 0 8px;
+    font-feature-settings: "tnum";
+  }
+  .code-badge button { margin-top: 6px; }
+
+  /* ===== player chips ===== */
+  .player-list {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;
+  }
+  .pchip {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px 6px 6px;
+    background: var(--glass-strong);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 14px; font-weight: 600;
+    transition: opacity 0.2s;
+  }
+  .pchip.dim { opacity: 0.45; }
+  .pchip .ava {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800; color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    flex-shrink: 0;
+  }
+  .pchip .host-tag {
+    font-size: 10px; font-weight: 800;
+    color: #0a0014;
+    background: var(--yellow);
+    padding: 2px 6px;
+    border-radius: 6px;
+    margin-left: 4px;
+    letter-spacing: 0.05em;
+  }
+  .pchip .you-tag {
+    font-size: 10px; font-weight: 800;
+    color: var(--cyan);
+    margin-left: 4px;
+    letter-spacing: 0.08em;
+  }
+  .pchip .kick {
+    background: transparent; color: var(--muted);
+    border: none; font-size: 14px; padding: 0 4px; cursor: pointer;
+    margin-left: 2px;
+  }
+  .pchip .kick:hover { color: var(--red); }
+
+  /* ===== timer ===== */
+  .timer-wrap {
+    text-align: center;
+    padding: 16px;
+    background: var(--glass);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    margin-bottom: 14px;
+    backdrop-filter: blur(20px);
+  }
+  .timer {
+    font-size: 72px; font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(180deg, var(--text) 0%, var(--muted) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .timer.warn {
+    background: linear-gradient(180deg, var(--yellow), var(--orange));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .timer.danger {
+    background: linear-gradient(180deg, var(--red), var(--pink));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: pulse 1s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  .timer-sub { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.2em; margin-top: 4px; }
+
+  /* ===== secret card with flip ===== */
+  .card-flip {
+    perspective: 1400px;
+    margin: 0 0 14px;
+  }
+  .card-inner {
+    position: relative;
+    width: 100%; min-height: 220px;
+    transform-style: preserve-3d;
+    transition: transform 0.7s cubic-bezier(.5,1.6,.4,1);
+    cursor: pointer;
+    user-select: none;
+  }
+  .card-inner.flipped { transform: rotateY(180deg); }
+  .card-face {
+    position: absolute; inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 24px;
+    padding: 28px 24px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-strong);
+  }
+  .card-front {
+    background: linear-gradient(135deg, #1a0033 0%, #2a0a4a 50%, #0a0024 100%);
+    color: var(--text);
+    transform: translateZ(1px);
+  }
+  .card-front .glyph {
+    font-size: 44px; font-weight: 900; letter-spacing: 0.3em;
+    background: linear-gradient(135deg, var(--pink), var(--cyan));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin-bottom: 14px;
+  }
+  .card-front .tap-hint { font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.2em; }
+
+  .card-back {
+    background:
+      linear-gradient(135deg, rgba(255,61,154,0.20), rgba(0,224,255,0.18)),
+      #1a0033;
+    transform: rotateY(180deg) translateZ(1px);
+    color: var(--text);
+  }
+  .card-back .role-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.2em; }
+  .card-back .role-value { font-size: 28px; font-weight: 800; margin-top: 4px; color: var(--yellow); }
+  .card-back .loc-emoji { font-size: 48px; margin-top: 12px; line-height: 1; }
+  .card-back .loc-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.2em; margin-top: 8px; }
+  .card-back .loc-value { font-size: 32px; font-weight: 900; letter-spacing: -0.01em;
+    background: linear-gradient(135deg, var(--pink), var(--cyan));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .card-back .first-asker { font-size: 13px; color: var(--muted); margin-top: 16px; }
+  .card-back .first-asker b { color: var(--text); font-weight: 700; }
+
+  .card-back.spy {
+    background:
+      linear-gradient(135deg, rgba(255,45,85,0.30), rgba(255,61,154,0.20)),
+      #2a0014;
+  }
+  .card-back.spy .spy-glyph {
+    font-size: 14px; color: var(--red); text-transform: uppercase; letter-spacing: 0.3em; font-weight: 800;
+  }
+  .card-back.spy .spy-text {
+    font-size: 42px; font-weight: 900; letter-spacing: -0.02em; line-height: 1.05;
+    background: linear-gradient(135deg, var(--red), var(--yellow));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin: 8px 0 16px;
+  }
+
+  /* ===== locations grid ===== */
+  .loc-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .loc-grid .loc {
+    background: var(--glass-strong);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 10px;
+    font-size: 14px; font-weight: 600;
+    text-align: center;
+    user-select: none; cursor: pointer;
+    transition: opacity 0.2s, background 0.15s;
+  }
+  .loc-grid .loc:hover { background: rgba(255,255,255,0.14); }
+  .loc-grid .loc.struck {
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    text-decoration-color: var(--red);
+    opacity: 0.4;
+  }
+
+  /* ===== reveal screen ===== */
+  .reveal-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .reveal-row:last-child { border-bottom: none; }
+  .reveal-row .ava { width: 36px; height: 36px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-weight: 800; color: white; flex-shrink: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+  .reveal-row .name { font-size: 16px; font-weight: 700; flex: 1; }
+  .reveal-row .role { font-size: 14px; color: var(--muted); }
+  .reveal-row .badge {
+    font-size: 11px; font-weight: 800; padding: 4px 10px;
+    border-radius: 999px; letter-spacing: 0.1em;
+  }
+  .badge.spy { background: linear-gradient(135deg, var(--red), var(--pink)); color: white; }
+  .badge.innocent { background: var(--glass-strong); color: var(--muted); }
+  .badge.you { background: var(--cyan); color: #001a24; }
+
+  .big-reveal-headline {
+    font-size: 32px; font-weight: 900; letter-spacing: -0.02em; line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  .big-reveal-headline .spy-name {
+    background: linear-gradient(135deg, var(--red), var(--yellow));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .big-reveal-loc {
+    font-size: 28px; font-weight: 800; letter-spacing: -0.01em; margin-top: 4px;
+    background: linear-gradient(135deg, var(--pink), var(--cyan));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  /* ===== leave modal ===== */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(10,0,20,0.82);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-box {
+    background: linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
+    border: 1px solid var(--border-strong);
+    border-radius: 24px;
+    padding: 26px 22px;
+    width: 100%; max-width: 340px;
+    box-shadow: 0 28px 64px rgba(0,0,0,0.55);
+  }
+  .modal-box h2 { margin-bottom: 8px; }
+  .modal-box p  { color: var(--muted); line-height: 1.5; }
+  .modal-actions { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* ===== time's up flash ===== */
+  @keyframes times-up-flash {
+    0%,100% { background: var(--glass); border-color: var(--border); }
+    50%      { background: rgba(255,45,85,0.22); border-color: rgba(255,45,85,0.55); }
+  }
+  .timer-wrap.times-up { animation: times-up-flash 0.55s ease 4; }
+  .timer-sub.urgent { color: var(--red) !important; font-weight: 700; font-size: 14px; letter-spacing: 0.1em; }
+
+  /* ===== toast ===== */
+  .toast {
+    position: fixed; left: 50%; top: 24px; transform: translateX(-50%) translateY(-80px);
+    background: var(--glass-strong); border: 1px solid var(--border-strong);
+    backdrop-filter: blur(20px);
+    border-radius: 14px;
+    padding: 12px 18px;
+    font-weight: 600;
+    box-shadow: var(--shadow);
+    z-index: 100;
+    transition: transform 0.3s ease, opacity 0.3s;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .toast.error { background: linear-gradient(135deg, rgba(255,45,85,0.95), rgba(255,61,154,0.95)); border-color: transparent; }
+  .toast.ok    { background: linear-gradient(135deg, rgba(0,255,136,0.95), rgba(0,224,255,0.95)); color: #001a0d; border-color: transparent; }
+
+  /* ===== misc ===== */
+  .footer { margin-top: auto; padding-top: 16px; }
+  .small-link {
+    background: transparent; border: none; color: var(--cyan); cursor: pointer;
+    font: inherit; font-size: 14px; padding: 8px;
+  }
+  .small-link:hover { color: var(--text); }
+
+  .pack-toggles { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .pack-toggles .seg {
+    flex: 1 1 calc(33.333% - 4px);
+    padding: 10px 8px; text-align: center; font-weight: 700; font-size: 13px;
+    background: var(--glass-strong); border: 1px solid var(--border);
+    border-radius: 12px; cursor: pointer; user-select: none;
+    transition: background 0.15s, border 0.15s;
+    letter-spacing: 0.02em;
+  }
+  .pack-toggles .seg.on {
+    background: linear-gradient(135deg, rgba(255,61,154,0.30), rgba(0,224,255,0.30));
+    border-color: var(--border-strong);
+  }
+  .pack-toggles .seg[data-pack="weird"] { color: #d6b3ff; }
+  .pack-toggles .seg[data-pack="weird"].on {
+    background: linear-gradient(135deg, rgba(214,0,255,0.45), rgba(0,255,136,0.30));
+    color: var(--text);
+  }
+  .pack-toggles .seg[data-pack="adult"] { color: #ffaecc; }
+  .pack-toggles .seg[data-pack="spicy"] { color: #ffd280; }
+  .pack-toggles .seg[data-pack="spicy"].on {
+    background: linear-gradient(135deg, rgba(255,210,0,0.45), rgba(255,122,26,0.45));
+    color: var(--text);
+    box-shadow: 0 0 16px rgba(255,200,0,0.35);
+  }
+  .pack-toggles .seg[data-pack="adult"].on {
+    background: linear-gradient(135deg, rgba(255,45,85,0.55), rgba(255,122,26,0.40));
+    color: var(--text);
+    box-shadow: 0 0 16px rgba(255,45,85,0.35);
+  }
+  .pack-toggles .seg[data-pack="t-town"] { color: #7cc8ff; }
+  .pack-toggles .seg[data-pack="t-town"].on {
+    background: linear-gradient(135deg, rgba(0,120,255,0.55), rgba(0,224,255,0.40));
+    color: var(--text);
+    box-shadow: 0 0 16px rgba(0,150,255,0.40);
+  }
+  .pack-toggles .seg[data-pack="fictional"] { color: #2dd4bf; }
+  .pack-toggles .seg[data-pack="fictional"].on {
+    background: linear-gradient(135deg, rgba(45,212,191,0.55), rgba(167,139,250,0.40));
+    color: var(--text);
+    box-shadow: 0 0 16px rgba(45,212,191,0.40);
+  }
+  .pack-toggles .seg[data-pack="rooms"] { color: #a5b4fc; }
+  .pack-toggles .seg[data-pack="rooms"].on {
+    background: linear-gradient(135deg, rgba(129,140,248,0.55), rgba(167,139,250,0.40));
+    color: var(--text);
+    box-shadow: 0 0 16px rgba(129,140,248,0.40);
+  }
+  .pack-toggles .seg[data-pack="wonders"] { color: #fbbf24; }
+  .pack-toggles .seg[data-pack="wonders"].on {
+    background: linear-gradient(135deg, rgba(251,191,36,0.55), rgba(245,158,11,0.40));
+    color: var(--text);
+    box-shadow: 0 0 16px rgba(251,191,36,0.40);
+  }
+  .pack-toggles .seg[data-pack="rick-morty"] { color: #7cff7a; }
+  .pack-toggles .seg[data-pack="rick-morty"].on {
+    background: linear-gradient(135deg, rgba(124,255,122,0.50), rgba(0,224,255,0.40));
+    color: var(--text);
+    box-shadow: 0 0 16px rgba(124,255,122,0.40);
+  }
+  .pack-toggles .seg[data-pack="gloshaugen"] { color: #5fb0ff; }
+  .pack-toggles .seg[data-pack="gloshaugen"].on {
+    background: linear-gradient(135deg, rgba(0,94,184,0.55), rgba(95,176,255,0.40));
+    color: var(--text);
+    box-shadow: 0 0 16px rgba(0,94,184,0.45);
+  }
+
+  .duration-row { display: flex; align-items: center; gap: 12px; }
+  .duration-row input[type=range] { flex: 1; }
+  .duration-row .val { font-weight: 800; font-size: 18px; min-width: 70px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    height: 6px; background: var(--glass-strong); border-radius: 999px;
+    border: 1px solid var(--border);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--pink), var(--cyan));
+    border: 2px solid white; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(255,61,154,0.5);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--pink), var(--cyan));
+    border: 2px solid white; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(255,61,154,0.5);
+  }
+
+  /* ===== misc helpers ===== */
+  .conn-dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--lime); margin-right: 6px;
+    box-shadow: 0 0 8px var(--lime);
+  }
+  .conn-dot.off { background: var(--muted); box-shadow: none; }
+
+  .status-bar {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.15em;
+    margin-bottom: 8px;
+  }
+
+  /* ===== browse screen ===== */
+  .pack-filter-tabs {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .pf-tab {
+    font: inherit; font-size: 13px; font-weight: 700;
+    padding: 8px 14px; border-radius: 999px;
+    background: var(--glass-strong); border: 1px solid var(--border);
+    color: var(--muted); cursor: pointer;
+    transition: all 0.15s ease; letter-spacing: 0.04em;
+  }
+  .pf-tab.active {
+    background: linear-gradient(135deg, rgba(255,61,154,0.35), rgba(0,224,255,0.30));
+    border-color: var(--border-strong); color: var(--text);
+  }
+  .pf-tab.spicy-tab { color: #ffd280; }
+  .pf-tab.spicy-tab.active {
+    background: linear-gradient(135deg, rgba(255,210,0,0.50), rgba(255,122,26,0.45));
+    color: var(--text);
+  }
+  .badge-spicy { background: rgba(255,200,0,0.22); color: #ffd280; }
+  .pf-tab.adult-tab { color: #ffaecc; }
+  .pf-tab.adult-tab.active {
+    background: linear-gradient(135deg, rgba(255,45,85,0.55), rgba(255,122,26,0.40));
+    color: var(--text);
+  }
+  .pf-tab.t-town-tab { color: #7cc8ff; }
+  .pf-tab.t-town-tab.active {
+    background: linear-gradient(135deg, rgba(0,120,255,0.55), rgba(0,224,255,0.40));
+    color: var(--text);
+  }
+  .pf-tab.fictional-tab { color: #2dd4bf; }
+  .pf-tab.fictional-tab.active {
+    background: linear-gradient(135deg, rgba(45,212,191,0.55), rgba(167,139,250,0.40));
+    color: var(--text);
+  }
+  .pf-tab.rooms-tab { color: #a5b4fc; }
+  .pf-tab.rooms-tab.active {
+    background: linear-gradient(135deg, rgba(129,140,248,0.55), rgba(167,139,250,0.40));
+    color: var(--text);
+  }
+  .pf-tab.wonders-tab { color: #fbbf24; }
+  .pf-tab.wonders-tab.active {
+    background: linear-gradient(135deg, rgba(251,191,36,0.55), rgba(245,158,11,0.40));
+    color: var(--text);
+  }
+  .pf-tab.rick-morty-tab { color: #7cff7a; }
+  .pf-tab.rick-morty-tab.active {
+    background: linear-gradient(135deg, rgba(124,255,122,0.50), rgba(0,224,255,0.40));
+    color: var(--text);
+  }
+  .pf-tab.gloshaugen-tab { color: #5fb0ff; }
+  .pf-tab.gloshaugen-tab.active {
+    background: linear-gradient(135deg, rgba(0,94,184,0.55), rgba(95,176,255,0.40));
+    color: var(--text);
+  }
+
+  .browse-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 10px; padding-bottom: 24px;
+  }
+  .loc-card {
+    background: var(--glass-strong);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .loc-card:hover { border-color: var(--border-strong); background: rgba(255,255,255,0.13); }
+  .loc-card.open  { border-color: var(--border-strong); grid-column: span 2; }
+  .loc-card-head {
+    padding: 12px 14px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .loc-card-name { font-size: 14px; font-weight: 700; flex: 1; }
+  .loc-card-badge {
+    font-size: 10px; font-weight: 800; padding: 3px 8px;
+    border-radius: 999px; text-transform: uppercase; letter-spacing: 0.1em;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .badge-classic { background: rgba(0,224,255,0.20); color: var(--cyan); }
+  .badge-outdoor { background: rgba(0,255,136,0.20); color: var(--lime); }
+  .badge-weird   { background: rgba(214,0,255,0.25); color: #d6b3ff; }
+  .badge-adult   { background: rgba(255,45,85,0.25); color: #ffaecc; }
+  .badge-t-town  { background: rgba(0,150,255,0.22); color: #7cc8ff; }
+  .badge-fictional { background: rgba(45,212,191,0.22); color: #2dd4bf; }
+  .badge-rooms     { background: rgba(129,140,248,0.22); color: #a5b4fc; }
+  .badge-wonders   { background: rgba(251,191,36,0.22); color: #fbbf24; }
+  .badge-rick-morty { background: rgba(124,255,122,0.22); color: #7cff7a; }
+  .badge-gloshaugen { background: rgba(0,94,184,0.25); color: #5fb0ff; }
+  .loc-card-chevron { color: var(--muted); font-size: 12px; flex-shrink: 0; transition: transform 0.2s; }
+  .loc-card.open .loc-card-chevron { transform: rotate(90deg); }
+  .loc-card-roles {
+    display: none;
+    padding: 0 14px 14px;
+    flex-wrap: wrap; gap: 6px;
+  }
+  .loc-card.open .loc-card-roles { display: flex; }
+  .role-pill {
+    font-size: 12px; font-weight: 600;
+    padding: 4px 10px; border-radius: 999px;
+    background: var(--glass); border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  /* ===== logo icon ===== */
+  .logo-icon {
+    display: block;
+    margin: 0 auto 4px;
+    width: 200px; height: 200px;
+    object-fit: contain;
+    border-radius: 36px;
+    animation: icon-float 4s ease-in-out infinite,
+               icon-glow  3s ease-in-out infinite;
+    will-change: transform, filter;
+  }
+  @keyframes icon-float {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-10px); }
+  }
+  @keyframes icon-glow {
+    0%,100% {
+      filter: drop-shadow(0 0 14px rgba(255,61,154,0.55))
+              drop-shadow(0 0 30px rgba(0,224,255,0.30));
+    }
+    50% {
+      filter: drop-shadow(0 0 26px rgba(255,61,154,0.90))
+              drop-shadow(0 0 54px rgba(0,224,255,0.65));
+    }
+  }
+
+  /* tablet/desktop bumps */
+  @media (min-width: 600px) {
+    .logo { font-size: 72px; }
+    .timer { font-size: 88px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+</div>
+<div class="grain" aria-hidden="true"></div>
+
+<div class="app">
+
+  <!-- ===== HOME ===== -->
+  <section id="screen-home" class="screen active">
+    <div style="margin-top: 24px; text-align: center;">
+
+      <img class="logo-icon" src="/logo.png" alt="Spyfall">
+      <p class="tagline">Find the spy. Or be the spy.</p>
+    </div>
+
+    <div class="home-actions">
+      <button class="big-action create" id="go-create">
+        <div class="ba-title">Create a room</div>
+        <div class="ba-sub">Start a new game and share the code with friends.</div>
+      </button>
+      <button class="big-action join" id="go-join">
+        <div class="ba-title">Join a room</div>
+        <div class="ba-sub">Got a 4-letter code? Hop in.</div>
+      </button>
+    </div>
+
+    <div class="footer" style="display:flex; gap: 8px; justify-content: center;">
+      <button class="small-link" id="how-link">How to play</button>
+      <button class="small-link" id="browse-link">Browse locations</button>
+    </div>
+  </section>
+
+  <!-- ===== CREATE: name entry ===== -->
+  <section id="screen-create" class="screen">
+    <button class="small-link" data-back="home" style="align-self: flex-start;">← Back</button>
+    <h1 style="margin-top: 24px;">Your name</h1>
+    <p style="margin-top: 6px;">Pick something your friends will recognize.</p>
+    <div class="panel" style="margin-top: 18px;">
+      <input id="create-name" class="input" type="text" placeholder="Display name" maxlength="20" autocomplete="off">
+    </div>
+    <div class="footer stack">
+      <button class="btn" id="create-submit">Create room</button>
+    </div>
+  </section>
+
+  <!-- ===== JOIN: code + name ===== -->
+  <section id="screen-join" class="screen">
+    <button class="small-link" data-back="home" style="align-self: flex-start;">← Back</button>
+    <h1 style="margin-top: 24px;">Join a room</h1>
+    <p style="margin-top: 6px;">Enter the 4-letter room code.</p>
+    <div class="panel" style="margin-top: 18px;">
+      <label>Room code</label>
+      <input id="join-code" class="input code" type="text" placeholder="????" maxlength="4" autocapitalize="characters" autocorrect="off" autocomplete="off" inputmode="text">
+      <label style="margin-top: 16px;">Your name</label>
+      <input id="join-name" class="input" type="text" placeholder="Display name" maxlength="20" autocomplete="off">
+    </div>
+    <div class="footer stack">
+      <button class="btn cyan" id="join-submit">Join</button>
+    </div>
+  </section>
+
+  <!-- ===== LOBBY ===== -->
+  <section id="screen-lobby" class="screen">
+    <div class="status-bar">
+      <span class="conn-dot" id="conn-dot"></span>
+      <span id="conn-label">Connected</span>
+    </div>
+
+    <div class="code-badge">
+      <div class="label-small">Room code</div>
+      <div class="code" id="lobby-code">----</div>
+      <div class="row" style="max-width: 280px; margin: 0 auto;">
+        <button class="btn ghost compact" id="copy-code">Copy code</button>
+        <button class="btn ghost compact" id="share-code">Share</button>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top: 12px;">
+      <h3>Players <span id="player-count" style="color: var(--text); font-weight: 700;">0</span></h3>
+      <div class="player-list" id="lobby-players"></div>
+    </div>
+
+    <div class="panel" id="settings-panel" style="display: none;">
+      <h3>Settings</h3>
+      <label>Round length</label>
+      <div class="duration-row">
+        <input type="range" id="duration-slider" min="3" max="15" value="8">
+        <div class="val"><span id="duration-val">8</span> min</div>
+      </div>
+      <label>Locations</label>
+      <div class="pack-toggles">
+        <div class="seg" data-pack="all">All</div>
+        <div class="seg" data-pack="classic">Classic</div>
+        <div class="seg" data-pack="outdoor">Outdoor</div>
+        <div class="seg" data-pack="weird">Weird</div>
+        <div class="seg" data-pack="adult">18+</div>
+        <div class="seg" data-pack="spicy">⚠️ Dark</div>
+        <div class="seg" data-pack="t-town">T-Town</div>
+        <div class="seg" data-pack="fictional">Fictional</div>
+        <div class="seg" data-pack="rooms">Rooms</div>
+        <div class="seg" data-pack="wonders">Wonders</div>
+        <div class="seg" data-pack="rick-morty">🛸 Rick & Morty</div>
+        <div class="seg" data-pack="gloshaugen">🏰 Gløshaugen</div>
+      </div>
+    </div>
+
+    <div class="panel" id="waiting-panel" style="display: none;">
+      <p style="text-align: center;">Waiting for the host to start the round…</p>
+    </div>
+
+    <div class="footer stack">
+      <button class="btn" id="start-btn" style="display: none;">Start round</button>
+      <button class="btn ghost" id="leave-btn">Leave room</button>
+    </div>
+  </section>
+
+  <!-- ===== ROUND ===== -->
+  <section id="screen-round" class="screen">
+    <div class="timer-wrap" id="timer-wrap">
+      <div class="timer" id="timer">8:00</div>
+      <div class="timer-sub" id="timer-sub">Time remaining</div>
+    </div>
+
+    <div class="card-flip">
+      <div class="card-inner" id="card-inner">
+        <div class="card-face card-front">
+          <div class="glyph">SECRET</div>
+          <div class="tap-hint">Tap to reveal</div>
+        </div>
+        <div class="card-face card-back" id="card-back">
+          <!-- filled at runtime -->
+        </div>
+      </div>
+    </div>
+
+    <div class="panel tight">
+      <h3 style="margin-bottom: 8px;">First questioner</h3>
+      <div id="first-asker" style="font-size: 18px; font-weight: 800;
+        background: linear-gradient(135deg, var(--yellow), var(--orange));
+        -webkit-background-clip: text; background-clip: text; color: transparent;"></div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-bottom: 10px;">Players <span style="text-transform: none; color: var(--muted); font-size: 12px; letter-spacing: 0; font-weight: 500;">(long-press to mark as not sus)</span></h3>
+      <div class="loc-grid" id="player-suspect-grid"></div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-bottom: 10px;">Locations <span style="text-transform: none; color: var(--muted); font-size: 12px; letter-spacing: 0; font-weight: 500;">(long-press to strike)</span></h3>
+      <div class="loc-grid" id="loc-grid"></div>
+    </div>
+
+    <div class="footer stack">
+      <button class="btn" id="pause-round-btn" style="display: none;">⏸ Pause</button>
+      <button class="btn danger" id="end-round-btn" style="display: none;">End round &amp; reveal</button>
+      <button class="btn ghost" id="round-leave-btn">Leave</button>
+    </div>
+  </section>
+
+  <!-- ===== END ===== -->
+  <section id="screen-end" class="screen">
+    <div class="panel" style="background: linear-gradient(135deg, rgba(255,61,154,0.18), rgba(0,224,255,0.18));">
+      <h3>Round over</h3>
+      <div class="big-reveal-headline">The spy was <span class="spy-name" id="end-spy-name">—</span></div>
+      <div class="muted">You were at</div>
+      <div class="big-reveal-loc" id="end-location">—</div>
+    </div>
+
+    <div class="panel">
+      <h3>Roles</h3>
+      <div id="end-roles"></div>
+    </div>
+
+    <div class="footer stack">
+      <button class="btn lime" id="play-again-btn" style="display: none;">Play again</button>
+      <button class="btn ghost" id="end-leave-btn">Leave</button>
+    </div>
+  </section>
+
+  <!-- ===== BROWSE LOCATIONS ===== -->
+  <section id="screen-browse" class="screen">
+    <button class="small-link" data-back="home" style="align-self: flex-start;">← Back</button>
+    <h1 style="margin-top: 16px;">Locations</h1>
+    <p style="margin-top: 4px; margin-bottom: 14px;">Tap any card to see the roles.</p>
+
+    <div class="pack-filter-tabs" id="browse-tabs">
+      <button class="pf-tab active" data-pf="all">All</button>
+      <button class="pf-tab" data-pf="classic">Classic</button>
+      <button class="pf-tab" data-pf="outdoor">Outdoor</button>
+      <button class="pf-tab" data-pf="weird">Weird</button>
+      <button class="pf-tab adult-tab" data-pf="adult">18+</button>
+      <button class="pf-tab spicy-tab" data-pf="spicy">⚠️ Dark</button>
+      <button class="pf-tab t-town-tab" data-pf="t-town">T-Town</button>
+      <button class="pf-tab fictional-tab" data-pf="fictional">Fictional</button>
+      <button class="pf-tab rooms-tab" data-pf="rooms">Rooms</button>
+      <button class="pf-tab wonders-tab" data-pf="wonders">Wonders</button>
+      <button class="pf-tab rick-morty-tab" data-pf="rick-morty">🛸 Rick & Morty</button>
+      <button class="pf-tab gloshaugen-tab" data-pf="gloshaugen">🏰 Gløshaugen</button>
+    </div>
+
+    <div id="browse-grid" class="browse-grid"></div>
+  </section>
+
+  <!-- ===== HOW TO PLAY ===== -->
+  <section id="screen-howto" class="screen">
+    <button class="small-link" data-back="home" style="align-self: flex-start;">← Back</button>
+    <h1 style="margin-top: 24px;">How to play</h1>
+    <div class="panel" style="margin-top: 14px;">
+      <p style="color: var(--text); margin-bottom: 10px;">One person is the <b style="color: var(--red);">spy</b>. Everyone else shares a secret <b style="color: var(--cyan);">location</b> and gets a unique <b style="color: var(--yellow);">role</b> there.</p>
+      <p style="margin-bottom: 10px;">Take turns asking each other questions about the location. Non-spies want to flush out the spy without giving the location away. The spy tries to blend in and figure out where you are.</p>
+      <p>When the timer ends, vote out loud on who you think the spy is — then the host taps <b>End round &amp; reveal</b> to see who was right.</p>
+    </div>
+    <div class="panel">
+      <h3>Setup</h3>
+      <p style="color: var(--text); margin-top: 8px;">The host creates a room and shares the 4-letter code. Other players open the same site and tap <b>Join a room</b>.</p>
+    </div>
+  </section>
+
+</div>
+
+<!-- ===== LEAVE MODAL ===== -->
+<div id="leave-modal" class="modal-overlay" style="display:none;" aria-modal="true" role="dialog">
+  <div class="modal-box">
+    <h2>Leave the game?</h2>
+    <p>You're in the middle of a round. Your spot is held for 30 seconds if you want to rejoin.</p>
+    <div class="modal-actions">
+      <button class="btn danger" id="leave-confirm">Leave anyway</button>
+      <button class="btn ghost"  id="leave-cancel">Stay in game</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ============================================================
+//  STATE
+// ============================================================
+const state = {
+  ws: null,
+  myId: null,
+  sessionId: localStorage.getItem('spyfall_session') || null,
+  code: localStorage.getItem('spyfall_code') || null,
+  isHost: false,
+  hostId: null,
+  players: [],
+  serverState: 'lobby',
+  settings: { durationSec: 480, pack: 'all' },
+  round: null,        // { isSpy, location, role, firstAskerName, endsAt, allLocations }
+  struck: new Set(),
+  struckPlayers: new Set(),
+  timerInterval: null,
+  reconnectTimer: null,
+};
+
+// ============================================================
+//  SCREEN MANAGEMENT
+// ============================================================
+function show(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + name);
+  if (el) el.classList.add('active');
+  window.scrollTo({ top: 0 });
+}
+
+function $(id) { return document.getElementById(id); }
+
+// ============================================================
+//  TOAST
+// ============================================================
+let toastTimer = null;
+function toast(msg, kind = '') {
+  const el = $('toast');
+  el.className = 'toast show ' + kind;
+  el.textContent = msg;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.classList.remove('show'); }, 2400);
+}
+
+// ============================================================
+//  AVATAR HELPERS
+// ============================================================
+function nameHue(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
+  return ((h % 360) + 360) % 360;
+}
+function avatarStyle(name) {
+  const hue = nameHue(name);
+  return `background: linear-gradient(135deg, hsl(${hue},85%,60%), hsl(${(hue+45)%360},85%,55%));`;
+}
+function initials(name) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+  return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+}
+
+// ============================================================
+//  WEBSOCKET
+// ============================================================
+function wsURL() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${proto}//${location.host}/ws`;
+}
+
+function connect() {
+  if (state.ws && state.ws.readyState !== 3) return;
+  const ws = new WebSocket(wsURL());
+  state.ws = ws;
+  setConn(false, 'Connecting…');
+
+  ws.addEventListener('open', () => {
+    setConn(true, 'Connected');
+    // If we have a stored session, try to rejoin
+    if (state.sessionId && state.code) {
+      send({ t: 'join', code: state.code, sessionId: state.sessionId });
+    }
+  });
+
+  ws.addEventListener('message', (e) => {
+    let msg;
+    try { msg = JSON.parse(e.data); } catch { return; }
+    handleServerMessage(msg);
+  });
+
+  ws.addEventListener('close', () => {
+    setConn(false, 'Reconnecting…');
+    if (state.reconnectTimer) clearTimeout(state.reconnectTimer);
+    state.reconnectTimer = setTimeout(connect, 1500);
+  });
+
+  ws.addEventListener('error', () => { try { ws.close(); } catch {} });
+}
+
+function send(obj) {
+  if (state.ws && state.ws.readyState === 1) {
+    state.ws.send(JSON.stringify(obj));
+  }
+}
+
+function setConn(ok, label) {
+  $('conn-dot').classList.toggle('off', !ok);
+  $('conn-label').textContent = label;
+}
+
+// ============================================================
+//  SERVER MESSAGES
+// ============================================================
+function handleServerMessage(msg) {
+  switch (msg.t) {
+    case 'joined': {
+      state.myId = msg.you;
+      state.sessionId = msg.sessionId;
+      state.code = msg.code;
+      localStorage.setItem('spyfall_session', msg.sessionId);
+      localStorage.setItem('spyfall_code', msg.code);
+      // We'll fully render once roomState arrives
+      break;
+    }
+    case 'roomState': {
+      state.code = msg.code;
+      state.hostId = msg.hostId;
+      state.players = msg.players;
+      state.serverState = msg.state;
+      state.settings = msg.settings || state.settings;
+      state.isHost = state.myId === state.hostId;
+      renderLobby();
+      if (state.serverState === 'inRound') renderSuspectGrid();
+      // Move to appropriate screen if we're not already there
+      if (msg.state === 'lobby') {
+        show('lobby');
+      } else if (msg.state === 'roundEnded') {
+        show('end');
+        renderEnd();
+      }
+      break;
+    }
+    case 'roundStarted': {
+      const remaining = msg.remainingMs ?? (msg.durationSec * 1000);
+      state.round = {
+        isSpy: msg.isSpy,
+        location: msg.location,
+        role: msg.role,
+        firstAskerName: msg.firstAskerName,
+        endsAt: Date.now() + remaining,
+        durationSec: msg.durationSec,
+        allLocations: msg.allLocations,
+        paused: !!msg.paused,
+        remainingMs: msg.paused ? remaining : null,
+      };
+      state.struck = new Set();
+      state.struckPlayers = new Set();
+      enterRound();
+      break;
+    }
+    case 'roundPaused': {
+      if (!state.round) break;
+      state.round.paused = true;
+      state.round.remainingMs = msg.remainingMs;
+      updatePauseButton();
+      startTimer();
+      break;
+    }
+    case 'roundResumed': {
+      if (!state.round) break;
+      state.round.paused = false;
+      state.round.remainingMs = null;
+      state.round.endsAt = Date.now() + (msg.remainingMs || 0);
+      updatePauseButton();
+      startTimer();
+      break;
+    }
+    case 'roundEnded': {
+      state.serverState = 'roundEnded';
+      // Build reveal data using server response + our cached state
+      state.lastReveal = msg;
+      stopTimer();
+      show('end');
+      renderEnd();
+      break;
+    }
+    case 'kicked': {
+      clearSession();
+      toast('You were removed from the room', 'error');
+      show('home');
+      break;
+    }
+    case 'error': {
+      toast(msg.msg || 'Error', 'error');
+      break;
+    }
+  }
+}
+
+function clearSession() {
+  state.sessionId = null; state.code = null; state.round = null;
+  state.players = []; state.myId = null;
+  localStorage.removeItem('spyfall_session');
+  localStorage.removeItem('spyfall_code');
+}
+
+// ============================================================
+//  LOBBY RENDER
+// ============================================================
+function renderLobby() {
+  $('lobby-code').textContent = state.code || '----';
+  $('player-count').textContent = `${state.players.length}`;
+
+  const list = $('lobby-players');
+  list.innerHTML = '';
+  state.players.forEach(p => {
+    const chip = document.createElement('span');
+    chip.className = 'pchip' + (p.connected ? '' : ' dim');
+    const ava = `<span class="ava" style="${avatarStyle(p.name)}">${initials(p.name)}</span>`;
+    const host = p.id === state.hostId ? `<span class="host-tag">HOST</span>` : '';
+    const you  = p.id === state.myId   ? `<span class="you-tag">YOU</span>`   : '';
+    let kick = '';
+    if (state.isHost && p.id !== state.myId && state.serverState !== 'inRound') {
+      kick = `<button class="kick" data-kick="${p.id}" title="Kick">✕</button>`;
+    }
+    chip.innerHTML = `${ava}<span>${escapeHTML(p.name)}</span>${host}${you}${kick}`;
+    list.appendChild(chip);
+  });
+  list.querySelectorAll('[data-kick]').forEach(btn => {
+    btn.addEventListener('click', () => send({ t: 'kick', playerId: btn.dataset.kick }));
+  });
+
+  // Settings panel + start button
+  $('settings-panel').style.display = state.isHost ? 'block' : 'none';
+  $('waiting-panel').style.display  = state.isHost ? 'none' : 'block';
+  $('start-btn').style.display      = state.isHost ? 'block' : 'none';
+  $('start-btn').disabled = state.players.filter(p => p.connected).length < 2;
+  $('start-btn').textContent = state.players.filter(p => p.connected).length < 2
+    ? 'Need 2+ players' : 'Start round';
+
+  // Reflect settings in UI
+  const mins = Math.round(state.settings.durationSec / 60);
+  $('duration-slider').value = mins;
+  $('duration-val').textContent = mins;
+  document.querySelectorAll('.pack-toggles .seg').forEach(s => {
+    s.classList.toggle('on', s.dataset.pack === state.settings.pack);
+  });
+}
+
+// ============================================================
+//  ROUND
+// ============================================================
+function enterRound() {
+  show('round');
+  // Build secret card back
+  const back = $('card-back');
+  back.classList.toggle('spy', state.round.isSpy);
+  if (state.round.isSpy) {
+    back.innerHTML = `
+      <div class="spy-glyph">YOUR ASSIGNMENT</div>
+      <div class="spy-text">YOU ARE<br>THE SPY</div>
+    `;
+  } else {
+    back.innerHTML = `
+      <div class="loc-label">Location</div>
+      ${state.round.location.emoji ? `<div class="loc-emoji">${state.round.location.emoji}</div>` : ''}
+      <div class="loc-value">${escapeHTML(state.round.location.name)}</div>
+      <div class="role-label" style="margin-top: 18px;">Your role</div>
+      <div class="role-value">${escapeHTML(state.round.role)}</div>
+    `;
+  }
+
+  $('card-inner').classList.remove('flipped');
+  $('first-asker').textContent = state.round.firstAskerName;
+
+  renderSuspectGrid();
+
+  // Locations grid
+  const grid = $('loc-grid');
+  grid.innerHTML = '';
+  state.round.allLocations.forEach(loc => {
+    const div = document.createElement('div');
+    div.className = 'loc';
+    div.textContent = (loc.emoji ? loc.emoji + ' ' : '') + loc.name;
+    if (state.struck.has(loc.id)) div.classList.add('struck');
+
+    let pressTimer = null;
+    const start = () => {
+      pressTimer = setTimeout(() => {
+        if (state.struck.has(loc.id)) state.struck.delete(loc.id);
+        else state.struck.add(loc.id);
+        div.classList.toggle('struck');
+        if (navigator.vibrate) navigator.vibrate(30);
+        pressTimer = null;
+      }, 350);
+    };
+    const cancel = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+    div.addEventListener('touchstart', start, { passive: true });
+    div.addEventListener('touchend', cancel);
+    div.addEventListener('touchmove', cancel);
+    div.addEventListener('mousedown', start);
+    div.addEventListener('mouseup', cancel);
+    div.addEventListener('mouseleave', cancel);
+    grid.appendChild(div);
+  });
+
+  $('end-round-btn').style.display = state.isHost ? 'block' : 'none';
+  updatePauseButton();
+
+  startTimer();
+}
+
+function renderSuspectGrid() {
+  const grid = $('player-suspect-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  state.players.forEach(pl => {
+    if (pl.id === state.myId) return;
+    const div = document.createElement('div');
+    div.className = 'loc';
+    div.textContent = pl.name + (pl.connected ? '' : ' ⚪');
+    if (state.struckPlayers.has(pl.id)) div.classList.add('struck');
+
+    let pressTimer = null;
+    const start = () => {
+      pressTimer = setTimeout(() => {
+        if (state.struckPlayers.has(pl.id)) state.struckPlayers.delete(pl.id);
+        else state.struckPlayers.add(pl.id);
+        div.classList.toggle('struck');
+        if (navigator.vibrate) navigator.vibrate(30);
+        pressTimer = null;
+      }, 350);
+    };
+    const cancel = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+    div.addEventListener('touchstart', start, { passive: true });
+    div.addEventListener('touchend', cancel);
+    div.addEventListener('touchmove', cancel);
+    div.addEventListener('mousedown', start);
+    div.addEventListener('mouseup', cancel);
+    div.addEventListener('mouseleave', cancel);
+    grid.appendChild(div);
+  });
+}
+
+function updatePauseButton() {
+  const btn = $('pause-round-btn');
+  if (!state.isHost || !state.round) {
+    btn.style.display = 'none';
+    return;
+  }
+  btn.style.display = 'block';
+  btn.textContent = state.round.paused ? '▶ Resume' : '⏸ Pause';
+}
+
+function startTimer() {
+  stopTimer();
+  // Reset any leftover time's-up styling from a previous round
+  $('timer-wrap').classList.remove('times-up');
+  const sub = $('timer-sub');
+  sub.classList.remove('urgent');
+
+  if (state.round.paused) {
+    const remain = Math.max(0, Math.round((state.round.remainingMs || 0) / 1000));
+    const m = Math.floor(remain / 60), s = remain % 60;
+    const el = $('timer');
+    el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    el.classList.toggle('warn',   remain > 0 && remain <= 120);
+    el.classList.toggle('danger', remain > 0 && remain <= 30);
+    sub.textContent = 'Paused';
+    return;
+  }
+
+  sub.textContent = 'Time remaining';
+
+  let firedTimesUp = false;
+  const tick = () => {
+    const remain = Math.max(0, Math.round((state.round.endsAt - Date.now()) / 1000));
+    const m = Math.floor(remain / 60), s = remain % 60;
+    const el = $('timer');
+    el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    el.classList.toggle('warn',   remain > 0 && remain <= 120);
+    el.classList.toggle('danger', remain > 0 && remain <= 30);
+    if (remain <= 0 && !firedTimesUp) {
+      firedTimesUp = true;
+      sub.textContent = "TIME'S UP — VOTE ON THE SPY";
+      sub.classList.add('urgent');
+      $('timer-wrap').classList.add('times-up');
+      if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 600]);
+      stopTimer();
+    }
+  };
+  tick();
+  state.timerInterval = setInterval(tick, 250);
+}
+function stopTimer() {
+  if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; }
+}
+
+// ============================================================
+//  END SCREEN
+// ============================================================
+function renderEnd() {
+  const reveal = state.lastReveal;
+  if (!reveal) return;
+  const spy = state.players.find(p => p.id === reveal.spyId);
+  $('end-spy-name').textContent = spy ? spy.name : '???';
+  $('end-location').textContent = reveal.location.name;
+
+  const list = $('end-roles');
+  list.innerHTML = '';
+  state.players.forEach(p => {
+    const isSpy = p.id === reveal.spyId;
+    const role = reveal.roles[p.id] || '';
+    const isYou = p.id === state.myId;
+    const row = document.createElement('div');
+    row.className = 'reveal-row';
+    row.innerHTML = `
+      <span class="ava" style="${avatarStyle(p.name)}">${initials(p.name)}</span>
+      <span class="name">${escapeHTML(p.name)}${isYou ? ' <span class="badge you">YOU</span>' : ''}</span>
+      ${isSpy ? '' : `<span class="role">${escapeHTML(role)}</span>`}
+      <span class="badge ${isSpy ? 'spy' : 'innocent'}">${isSpy ? 'SPY' : 'INNOCENT'}</span>
+    `;
+    list.appendChild(row);
+  });
+
+  $('play-again-btn').style.display = state.isHost ? 'block' : 'none';
+}
+
+// ============================================================
+//  EVENT WIRING
+// ============================================================
+$('go-create').addEventListener('click', () => show('create'));
+$('go-join').addEventListener('click', () => show('join'));
+$('how-link').addEventListener('click', () => show('howto'));
+document.querySelectorAll('[data-back]').forEach(b => {
+  b.addEventListener('click', () => show(b.dataset.back));
+});
+
+// Create
+$('create-name').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('create-submit').click(); });
+$('create-submit').addEventListener('click', () => {
+  const name = $('create-name').value.trim();
+  if (!name) { toast('Enter a name', 'error'); return; }
+  // Fresh session
+  clearSession();
+  send({ t: 'create', name });
+});
+
+// Join
+$('join-code').addEventListener('input', (e) => {
+  e.target.value = e.target.value.toUpperCase().replace(/[^A-Z2-9]/g, '').slice(0, 4);
+});
+$('join-name').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('join-submit').click(); });
+$('join-submit').addEventListener('click', () => {
+  const code = $('join-code').value.trim().toUpperCase();
+  const name = $('join-name').value.trim();
+  if (code.length !== 4) { toast('Enter the 4-letter code', 'error'); return; }
+  if (!name) { toast('Enter a name', 'error'); return; }
+  clearSession();
+  send({ t: 'join', code, name });
+});
+
+// Lobby
+$('copy-code').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(state.code); toast('Copied!', 'ok'); }
+  catch { toast(state.code, 'ok'); }
+});
+$('share-code').addEventListener('click', async () => {
+  const url = `${location.origin}/?code=${state.code}`;
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Spyfall', text: `Join my Spyfall game! Code: ${state.code}`, url }); }
+    catch {}
+  } else {
+    try { await navigator.clipboard.writeText(url); toast('Link copied', 'ok'); }
+    catch { toast(url, 'ok'); }
+  }
+});
+$('leave-btn').addEventListener('click', () => leaveRoom());
+$('end-leave-btn').addEventListener('click', () => leaveRoom());
+
+// Mid-round leave → show confirmation modal
+$('round-leave-btn').addEventListener('click', () => {
+  $('leave-modal').style.display = 'flex';
+});
+$('leave-cancel').addEventListener('click', () => {
+  $('leave-modal').style.display = 'none';
+});
+$('leave-confirm').addEventListener('click', () => {
+  $('leave-modal').style.display = 'none';
+  leaveRoom();
+});
+// Tap outside modal box to cancel
+$('leave-modal').addEventListener('click', (e) => {
+  if (e.target === $('leave-modal')) $('leave-modal').style.display = 'none';
+});
+
+function leaveRoom() {
+  send({ t: 'leave' });
+  clearSession();
+  show('home');
+}
+
+// Settings
+$('duration-slider').addEventListener('input', () => {
+  const v = parseInt($('duration-slider').value, 10);
+  $('duration-val').textContent = v;
+});
+$('duration-slider').addEventListener('change', () => {
+  if (!state.isHost) return;
+  const mins = parseInt($('duration-slider').value, 10);
+  send({ t: 'settings', durationSec: mins * 60 });
+});
+document.querySelectorAll('.pack-toggles .seg').forEach(s => {
+  s.addEventListener('click', () => {
+    if (!state.isHost) return;
+    send({ t: 'settings', pack: s.dataset.pack });
+  });
+});
+
+$('start-btn').addEventListener('click', () => send({ t: 'startRound' }));
+$('end-round-btn').addEventListener('click', () => {
+  if (confirm('End round and reveal the spy?')) send({ t: 'endRound' });
+});
+$('pause-round-btn').addEventListener('click', () => {
+  if (!state.isHost || !state.round) return;
+  send({ t: state.round.paused ? 'resumeRound' : 'pauseRound' });
+});
+$('play-again-btn').addEventListener('click', () => send({ t: 'playAgain' }));
+
+// Card flip
+$('card-inner').addEventListener('click', () => {
+  $('card-inner').classList.toggle('flipped');
+});
+
+// ============================================================
+//  UTIL
+// ============================================================
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
+  ));
+}
+
+// ============================================================
+//  BROWSE LOCATIONS
+// ============================================================
+let ALL_LOCS = [];
+
+const PACK_LABEL = { classic:'Classic', outdoor:'Outdoor', weird:'Weird', adult:'18+', spicy:'⚠️ Dark', 't-town':'T-Town', fictional:'Fictional', rooms:'Rooms', wonders:'Wonders', 'rick-morty':'🛸 Rick & Morty', gloshaugen:'🏰 Gløshaugen' };
+let browseFilter = 'all';
+let openCard = null;
+
+function renderBrowse() {
+  const grid = $('browse-grid');
+  grid.innerHTML = '';
+  openCard = null;
+  const filtered = browseFilter === 'all' ? ALL_LOCS : ALL_LOCS.filter(l => l.pack === browseFilter);
+
+  filtered.forEach((loc, i) => {
+    const card = document.createElement('div');
+    card.className = 'loc-card';
+    card.dataset.i = i;
+
+    const badgeClass = `badge-${loc.pack}`;
+    card.innerHTML = `
+      <div class="loc-card-head">
+        <span class="loc-card-name">${loc.emoji ? loc.emoji + ' ' : ''}${escapeHTML(loc.name)}</span>
+        ${browseFilter === 'all' ? `<span class="loc-card-badge ${badgeClass}">${PACK_LABEL[loc.pack]}</span>` : ''}
+        <span class="loc-card-chevron">▶</span>
+      </div>
+      <div class="loc-card-roles">
+        ${loc.roles.map(r => `<span class="role-pill">${escapeHTML(r)}</span>`).join('')}
+      </div>
+    `;
+
+    card.addEventListener('click', () => {
+      const isOpen = card.classList.contains('open');
+      // close any open card
+      if (openCard && openCard !== card) openCard.classList.remove('open');
+      card.classList.toggle('open', !isOpen);
+      openCard = isOpen ? null : card;
+      if (!isOpen) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    grid.appendChild(card);
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '<p class="muted" style="grid-column:span 2;text-align:center;padding:24px 0;">No locations in this pack.</p>';
+  }
+}
+
+$('browse-link').addEventListener('click', () => {
+  browseFilter = 'all';
+  document.querySelectorAll('.pf-tab').forEach(t => t.classList.toggle('active', t.dataset.pf === 'all'));
+  renderBrowse();
+  show('browse');
+});
+
+document.getElementById('browse-tabs').addEventListener('click', (e) => {
+  const tab = e.target.closest('.pf-tab');
+  if (!tab) return;
+  browseFilter = tab.dataset.pf;
+  document.querySelectorAll('.pf-tab').forEach(t => t.classList.toggle('active', t === tab));
+  renderBrowse();
+});
+
+// Pre-fill code from ?code=ABCD
+const params = new URLSearchParams(location.search);
+const codeParam = (params.get('code') || '').toUpperCase().replace(/[^A-Z2-9]/g, '').slice(0,4);
+if (codeParam) {
+  $('join-code').value = codeParam;
+  show('join');
+}
+
+// Load locations from server (single source of truth)
+fetch('/locations.json', { cache: 'no-store' })
+  .then(r => r.json())
+  .then(data => {
+    ALL_LOCS = data;
+    const browseEl = document.getElementById('screen-browse');
+    if (browseEl && browseEl.classList.contains('show')) renderBrowse();
+  })
+  .catch(err => console.error('Failed to load locations:', err));
+
+// Boot
+connect();
+</script>
+</body>
+</html>
