@@ -386,7 +386,10 @@
     padding: 12px 10px;
     font-size: 14px; font-weight: 600;
     text-align: center;
-    user-select: none; cursor: pointer;
+    user-select: none; -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: pan-y;
+    cursor: pointer;
     transition: opacity 0.2s, background 0.15s;
   }
   .loc-grid .loc:hover { background: rgba(255,255,255,0.14); }
@@ -1266,8 +1269,8 @@ function enterRound() {
     };
     const cancel = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
     div.addEventListener('touchstart', start, { passive: true });
-    div.addEventListener('touchend', cancel);
-    div.addEventListener('touchmove', cancel);
+    div.addEventListener('touchend', cancel, { passive: true });
+    div.addEventListener('touchmove', cancel, { passive: true });
     div.addEventListener('mousedown', start);
     div.addEventListener('mouseup', cancel);
     div.addEventListener('mouseleave', cancel);
@@ -1303,8 +1306,8 @@ function renderSuspectGrid() {
     };
     const cancel = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
     div.addEventListener('touchstart', start, { passive: true });
-    div.addEventListener('touchend', cancel);
-    div.addEventListener('touchmove', cancel);
+    div.addEventListener('touchend', cancel, { passive: true });
+    div.addEventListener('touchmove', cancel, { passive: true });
     div.addEventListener('mousedown', start);
     div.addEventListener('mouseup', cancel);
     div.addEventListener('mouseleave', cancel);
