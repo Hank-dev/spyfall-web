@@ -7,7 +7,7 @@
 <title>Spyfall</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Major+Mono+Display&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Major+Mono+Display&family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root {
@@ -67,6 +67,221 @@
       linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
     background-attachment: fixed;
   }
+
+  /* ============================================================
+     THEME OVERRIDES — host picks one in the lobby
+     Cold War (default) values live in :root above.
+     ============================================================ */
+
+  /* CASINO: midnight velvet, champagne gold, soft bokeh */
+  [data-theme="casino"] {
+    --bg-0:        #07050b;
+    --bg-1:        #0e0a14;
+    --steel:       #1a0f1f;
+    --steel-2:     #241525;
+    --steel-3:     #2e1d31;
+    --rust:        #d4af6c;
+    --oxblood:     #6b1f2a;
+    --mustard:     #f1d49b;
+    --olive:       #4a8f6e;
+    --ink:         #f4ecd8;
+    --ink-mute:    #cfc4ad;
+    --muted:       #7a6f5d;
+    --concrete:    #5a4f3d;
+    --line:        rgba(212,175,108,0.16);
+    --line-soft:   rgba(255,245,225,0.06);
+    --line-strong: rgba(212,175,108,0.36);
+    --display: 'DM Serif Display', 'Special Elite', Georgia, serif;
+  }
+  [data-theme="casino"] body {
+    background:
+      radial-gradient(1200px 700px at 80% -10%, rgba(107,31,42,0.30), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, rgba(36,21,37,0.9), transparent 60%),
+      linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+    background-attachment: fixed;
+  }
+  [data-theme="casino"] .bg {
+    background:
+      radial-gradient(circle at 22% 18%, rgba(241,212,155,0.12), transparent 28%),
+      radial-gradient(circle at 78% 42%, rgba(241,212,155,0.08), transparent 25%),
+      radial-gradient(circle at 38% 78%, rgba(241,212,155,0.10), transparent 26%),
+      radial-gradient(circle at 88% 88%, rgba(241,212,155,0.07), transparent 22%);
+    filter: blur(14px);
+    opacity: 0.9;
+    animation: bokeh-drift 24s ease-in-out infinite;
+  }
+  @keyframes bokeh-drift {
+    0%,100% { transform: translate(0, 0); }
+    50%      { transform: translate(8px, -10px); }
+  }
+  [data-theme="casino"] .logo .redact {
+    background: transparent !important;
+    color: var(--rust) !important;
+    font-style: italic !important;
+    padding: 0 !important;
+  }
+  [data-theme="casino"] .logo {
+    font-weight: 400; letter-spacing: 0;
+    text-shadow: none;
+  }
+  [data-theme="casino"] .logo-crest::before { display: none; }
+  [data-theme="casino"] .logo-crest {
+    background: linear-gradient(180deg, #2a1830, #1a0f1f);
+    border-color: rgba(212,175,108,0.5);
+  }
+  [data-theme="casino"] .btn {
+    background: linear-gradient(180deg, #f1d49b 0%, #d4af6c 50%, #8a6d3a 100%);
+    color: #1a0f0a;
+    border-color: rgba(106,80,40,0.5);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.4),
+      inset 0 -1px 0 rgba(0,0,0,0.2),
+      2px 2px 0 rgba(0,0,0,0.5);
+  }
+  [data-theme="casino"] .btn:hover { background: linear-gradient(180deg, #f6dca9 0%, #dfbf7a 50%, #99784a 100%); }
+  [data-theme="casino"] .btn.danger { background: linear-gradient(180deg, #8a2a36, var(--oxblood)); color: var(--ink); }
+  [data-theme="casino"] .btn.cyan { background: var(--steel-2); color: var(--ink); border-color: var(--line-strong); box-shadow: none; }
+  [data-theme="casino"] .big-action.create::after { content: "VIP"; color: var(--rust); border-color: var(--rust); background: var(--bg-0); }
+  [data-theme="casino"] .pack-toggles .seg.on { background: var(--rust); border-color: var(--rust); color: #1a0f0a; }
+  [data-theme="casino"] h1, [data-theme="casino"] h2 { letter-spacing: 0; }
+  [data-theme="casino"] .timer { letter-spacing: 0.04em; text-shadow: 0 0 18px rgba(212,175,108,0.25); }
+  [data-theme="casino"] .code-badge .code { text-shadow: 0 0 22px rgba(212,175,108,0.30); letter-spacing: 0.16em; }
+  [data-theme="casino"] .ticker .pip { background: var(--rust); }
+  [data-theme="casino"] .modal-box::before,
+  [data-theme="casino"] .modal-card::before { background: var(--rust); }
+
+  /* VAPOR: original pink/cyan/magenta glassmorphism */
+  [data-theme="vapor"] {
+    --bg-0:        #0a0014;
+    --bg-1:        #150024;
+    --steel:       rgba(255,255,255,0.06);
+    --steel-2:     rgba(255,255,255,0.10);
+    --steel-3:     rgba(255,255,255,0.14);
+    --rust:        #ff3d9a;
+    --oxblood:     #d600ff;
+    --mustard:     #00e0ff;
+    --olive:       #00ff88;
+    --ink:         #f5f1ff;
+    --ink-mute:    #c8bce0;
+    --muted:       #a89cc4;
+    --concrete:    #6a5e84;
+    --line:        rgba(255,255,255,0.12);
+    --line-soft:   rgba(255,255,255,0.06);
+    --line-strong: rgba(255,255,255,0.22);
+    --display: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  }
+  [data-theme="vapor"] body {
+    background:
+      radial-gradient(1100px 700px at 80% -10%, rgba(255,61,154,0.24), transparent 55%),
+      radial-gradient(900px 600px at -10% 110%, rgba(214,0,255,0.20), transparent 55%),
+      radial-gradient(800px 600px at 50% 50%, rgba(0,224,255,0.16), transparent 55%),
+      linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+    background-attachment: fixed;
+  }
+  [data-theme="vapor"] .bg { background: none; opacity: 0; }
+  [data-theme="vapor"] .grain { opacity: 0.04; }
+  [data-theme="vapor"] .ticker, [data-theme="vapor"] .file-tag { display: none; }
+  [data-theme="vapor"] .classified { display: none; }
+  [data-theme="vapor"] .logo {
+    font-weight: 900; letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--rust) 0%, var(--oxblood) 50%, var(--mustard) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 0 80px rgba(255,61,154,0.35);
+  }
+  [data-theme="vapor"] .logo .redact {
+    background: transparent !important;
+    color: inherit !important;
+    padding: 0 !important;
+  }
+  [data-theme="vapor"] .logo-crest { display: none; }
+  [data-theme="vapor"] .panel,
+  [data-theme="vapor"] .auth-block,
+  [data-theme="vapor"] .code-badge,
+  [data-theme="vapor"] .timer-wrap,
+  [data-theme="vapor"] .modal-box,
+  [data-theme="vapor"] .modal-card {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 18px;
+  }
+  [data-theme="vapor"] .panel,
+  [data-theme="vapor"] .auth-block,
+  [data-theme="vapor"] .timer-wrap,
+  [data-theme="vapor"] .modal-box { box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+  [data-theme="vapor"] .btn {
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--rust), var(--mustard));
+    color: #0a0014;
+    border: 0;
+    box-shadow: 0 8px 24px rgba(255,61,154,0.4), inset 0 1px 0 rgba(255,255,255,0.4);
+    letter-spacing: 0.04em;
+  }
+  [data-theme="vapor"] .btn:hover { filter: brightness(1.08); }
+  [data-theme="vapor"] .btn.ghost { background: rgba(255,255,255,0.10); color: var(--ink); border: 1px solid var(--line-strong); box-shadow: none; }
+  [data-theme="vapor"] .btn.danger { background: linear-gradient(135deg, var(--oxblood), var(--rust)); color: white; }
+  [data-theme="vapor"] .pack-toggles .seg { border-radius: 12px; }
+  [data-theme="vapor"] .pack-toggles .seg.on { background: linear-gradient(135deg, rgba(255,61,154,0.30), rgba(0,224,255,0.30)); border-color: var(--line-strong); color: var(--ink); }
+  [data-theme="vapor"] .timer { text-shadow: 0 0 30px rgba(255,61,154,0.4); }
+  [data-theme="vapor"] .code-badge .code { letter-spacing: 0.16em; text-shadow: 0 0 30px rgba(0,224,255,0.5); }
+  [data-theme="vapor"] .big-action.create::after { display: none; }
+  [data-theme="vapor"] .big-action { border-radius: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+
+  /* PHOSPHOR: green-on-black terminal */
+  [data-theme="phosphor"] {
+    --bg-0:        #000000;
+    --bg-1:        #050a05;
+    --steel:       #0a1408;
+    --steel-2:     #122412;
+    --steel-3:     #1a3018;
+    --rust:        #00ff66;
+    --oxblood:     #ff3030;
+    --mustard:     #00ff66;
+    --olive:       #00ff66;
+    --ink:         #00ff66;
+    --ink-mute:    #00aa44;
+    --muted:       #006622;
+    --concrete:    #003311;
+    --line:        rgba(0,255,102,0.18);
+    --line-soft:   rgba(0,255,102,0.08);
+    --line-strong: rgba(0,255,102,0.40);
+    --display: 'IBM Plex Mono', ui-monospace, monospace;
+  }
+  [data-theme="phosphor"] body {
+    background:
+      repeating-linear-gradient(0deg, rgba(0,255,102,0.025) 0 1px, transparent 1px 3px),
+      radial-gradient(800px 500px at 50% -10%, rgba(0,255,102,0.06), transparent 60%),
+      #000000;
+    background-attachment: fixed;
+  }
+  [data-theme="phosphor"] .bg { background: none; opacity: 0; }
+  [data-theme="phosphor"] .grain { opacity: 0.05; }
+  [data-theme="phosphor"] .logo .redact {
+    background: transparent !important;
+    color: var(--ink) !important;
+    border: 1px solid var(--ink);
+  }
+  [data-theme="phosphor"] .logo {
+    text-shadow: 0 0 12px rgba(0,255,102,0.5);
+  }
+  [data-theme="phosphor"] .logo-crest { background: var(--bg-0); border-color: var(--ink); box-shadow: 0 0 12px rgba(0,255,102,0.3); }
+  [data-theme="phosphor"] .logo-crest svg circle[fill] { fill: var(--ink) !important; }
+  [data-theme="phosphor"] .logo-crest svg [stroke] { stroke: var(--ink) !important; }
+  [data-theme="phosphor"] .btn {
+    background: var(--bg-0);
+    color: var(--ink);
+    border: 1px solid var(--ink);
+    box-shadow: 0 0 12px rgba(0,255,102,0.25), 2px 2px 0 #001a08;
+    text-shadow: 0 0 6px rgba(0,255,102,0.5);
+  }
+  [data-theme="phosphor"] .btn:hover { background: var(--steel); }
+  [data-theme="phosphor"] .btn.danger { color: var(--oxblood); border-color: var(--oxblood); box-shadow: 0 0 12px rgba(255,48,48,0.3); text-shadow: 0 0 6px rgba(255,48,48,0.5); background: var(--bg-0); }
+  [data-theme="phosphor"] .btn.cyan, [data-theme="phosphor"] .btn.lime { background: var(--bg-0); color: var(--ink); border: 1px solid var(--ink); }
+  [data-theme="phosphor"] .timer { text-shadow: 0 0 18px rgba(0,255,102,0.5); }
+  [data-theme="phosphor"] .timer.danger { color: var(--oxblood); text-shadow: 0 0 18px rgba(255,48,48,0.6); }
+  [data-theme="phosphor"] .code-badge .code { text-shadow: 0 0 14px rgba(0,255,102,0.4); }
+  [data-theme="phosphor"] .pack-toggles .seg.on { background: var(--ink); color: var(--bg-0); }
+  [data-theme="phosphor"] .panel { box-shadow: 0 0 0 1px rgba(0,255,102,0.05), 2px 2px 0 rgba(0,0,0,0.6); }
+  [data-theme="phosphor"] .ticker .pip { background: var(--ink); box-shadow: 0 0 8px rgba(0,255,102,0.6); }
 
   /* Cold War atmosphere: scanlines, crosshair grid, faint vignette */
   .bg {
@@ -797,6 +1012,35 @@
   .pack-toggles .seg[data-pack="custom"]     { border-left: 2px solid var(--rust); color: var(--ink); }
   .pack-toggles .seg[data-pack="gloshaugen"] { border-left: 2px solid #5a8aaa; }
 
+  /* ===== theme picker ===== */
+  .theme-toggles {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 6px; margin-top: 8px;
+  }
+  .theme-seg {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    border-radius: 2px;
+    cursor: pointer; user-select: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .theme-seg:hover { background: var(--steel-2); border-color: var(--ink-mute); }
+  .theme-seg.on {
+    background: var(--ink); border-color: var(--ink); color: var(--bg-1);
+  }
+  .theme-seg .sw { display: inline-flex; gap: 2px; flex-shrink: 0; }
+  .theme-seg .sw i {
+    display: block; width: 10px; height: 18px; border-radius: 1px;
+    border: 1px solid rgba(0,0,0,0.4);
+  }
+  .theme-seg .lbl {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.16em;
+    color: inherit;
+  }
+
   .duration-row { display: flex; align-items: center; gap: 12px; }
   .duration-row input[type=range] { flex: 1; }
   .duration-row .val {
@@ -1199,6 +1443,26 @@
         <div class="seg" data-pack="gloshaugen">🏰 Gløshaugen</div>
         <div class="seg" data-pack="custom">✏️ Custom</div>
       </div>
+
+      <label>Theme</label>
+      <div class="theme-toggles" id="theme-toggles">
+        <div class="theme-seg" data-theme="coldwar">
+          <span class="sw"><i style="background:#1c2120"></i><i style="background:#8a3a2c"></i><i style="background:#b88a2a"></i></span>
+          <span class="lbl">Cold War</span>
+        </div>
+        <div class="theme-seg" data-theme="casino">
+          <span class="sw"><i style="background:#1a0f1f"></i><i style="background:#d4af6c"></i><i style="background:#6b1f2a"></i></span>
+          <span class="lbl">Casino</span>
+        </div>
+        <div class="theme-seg" data-theme="vapor">
+          <span class="sw"><i style="background:#150024"></i><i style="background:#ff3d9a"></i><i style="background:#00e0ff"></i></span>
+          <span class="lbl">Vapor</span>
+        </div>
+        <div class="theme-seg" data-theme="phosphor">
+          <span class="sw"><i style="background:#000"></i><i style="background:#00ff66"></i><i style="background:#003311"></i></span>
+          <span class="lbl">Phosphor</span>
+        </div>
+      </div>
     </div>
 
     <div class="panel" id="custom-locations-panel" style="display: none;">
@@ -1371,7 +1635,7 @@ const state = {
   hostId: null,
   players: [],
   serverState: 'lobby',
-  settings: { durationSec: 480, pack: 'all' },
+  settings: { durationSec: 480, pack: 'all', theme: 'coldwar' },
   customLocations: [],
   round: null,        // { isSpy, location, role, firstAskerName, endsAt, allLocations }
   struck: new Set(),
@@ -1501,6 +1765,7 @@ function handleServerMessage(msg) {
       state.settings = msg.settings || state.settings;
       state.customLocations = msg.customLocations || [];
       state.isHost = state.myId === state.hostId;
+      applyTheme(state.settings.theme || 'coldwar');
       renderLobby();
       if (state.serverState === 'inRound') renderSuspectGrid();
       // Move to appropriate screen if we're not already there
@@ -1654,8 +1919,18 @@ function renderLobby() {
   document.querySelectorAll('.pack-toggles .seg').forEach(s => {
     s.classList.toggle('on', s.dataset.pack === state.settings.pack);
   });
+  document.querySelectorAll('.theme-toggles .theme-seg').forEach(s => {
+    s.classList.toggle('on', s.dataset.theme === (state.settings.theme || 'coldwar'));
+  });
 
   renderCustomLocationsPanel();
+}
+
+function applyTheme(theme) {
+  const valid = ['coldwar', 'casino', 'vapor', 'phosphor'];
+  if (!valid.includes(theme)) theme = 'coldwar';
+  document.documentElement.setAttribute('data-theme', theme);
+  try { localStorage.setItem('spyfall_theme', theme); } catch {}
 }
 
 function renderCustomLocationsPanel() {
@@ -2013,6 +2288,12 @@ document.querySelectorAll('.pack-toggles .seg').forEach(s => {
     send({ t: 'settings', pack: s.dataset.pack });
   });
 });
+document.querySelectorAll('.theme-toggles .theme-seg').forEach(s => {
+  s.addEventListener('click', () => {
+    if (!state.isHost) return;
+    send({ t: 'settings', theme: s.dataset.theme });
+  });
+});
 
 $('custom-add-btn').addEventListener('click', () => {
   if (!state.isHost) return;
@@ -2201,6 +2482,9 @@ $('save-pack-confirm').addEventListener('click', () => {
 
 // Initial render
 renderAuthUI();
+
+// Apply saved theme on boot (before any roomState arrives)
+applyTheme(localStorage.getItem('spyfall_theme') || 'coldwar');
 
 // Boot
 connect();

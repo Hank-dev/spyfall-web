@@ -537,7 +537,7 @@ async def handle_create(ws, msg):
     room = {
         "code": code, "players": [player], "hostId": pid,
         "state": "lobby", "round": None, "roundTask": None,
-        "settings": {"durationSec": 480, "pack": "all"},
+        "settings": {"durationSec": 480, "pack": "all", "theme": "coldwar"},
         "customLocations": [],
     }
     rooms[code] = room
@@ -684,6 +684,10 @@ async def handle_message(ws, msg):
             p = str(msg["pack"])
             if p in ("all", "classic", "outdoor", "weird", "adult", "spicy", "t-town", "fictional", "rooms", "wonders", "rick-morty", "gloshaugen", "custom"):
                 s["pack"] = p
+        if "theme" in msg:
+            th = str(msg["theme"])
+            if th in ("coldwar", "casino", "vapor", "phosphor"):
+                s["theme"] = th
         await broadcast_room(room)
 
     elif t == "addCustomLocation":
