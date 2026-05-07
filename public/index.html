@@ -848,39 +848,8 @@
     letter-spacing: 0.16em; text-transform: uppercase;
   }
 
-  /* ===== auth / user ===== */
-  .auth-block {
-    display: flex; flex-direction: column; align-items: center; gap: 12px;
-    margin-top: 22px;
-    padding: 18px 14px 14px;
-    background: var(--steel);
-    border: 1px solid var(--line-strong);
-    border-radius: 3px;
-    box-shadow: 2px 2px 0 rgba(0,0,0,0.4);
-    position: relative;
-  }
-  .auth-block::before {
-    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px;
-    background: var(--mustard);
-  }
-  .auth-block .lbl {
-    font-family: var(--mono); font-size: 9.5px; color: var(--mustard);
-    letter-spacing: 0.28em; text-transform: uppercase; font-weight: 700;
-    display: inline-flex; align-items: center; gap: 8px;
-  }
-  .auth-block .lbl::before {
-    content: "//"; color: var(--rust);
-  }
-  /* Frame the Google button so it harmonizes with the dossier */
-  #signin-btn-host {
-    padding: 6px;
-    background: rgba(7,9,10,0.6);
-    border: 1px dashed var(--line);
-    border-radius: 2px;
-    display: inline-flex; align-items: center; justify-content: center;
-    min-height: 48px;
-  }
-  #signin-btn-host > div { display: block; }
+  /* ===== auth / user (modal contents) ===== */
+  #signin-btn-host > div { display: block; margin: 0 auto; }
   .user-row { display: flex; align-items: center; gap: 10px; width: 100%; }
   .user-row img { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line-strong); }
   .user-row .who {
@@ -1130,19 +1099,10 @@
       </button>
     </div>
 
-    <div class="auth-block" id="auth-block">
-      <div class="lbl" id="auth-label">Optional · save your custom packs</div>
-      <div id="signin-btn-host"></div>
-      <div class="user-row" id="user-row" style="display: none;">
-        <img id="user-pic" alt="">
-        <span class="who" id="user-name"></span>
-        <button class="signout" id="signout-btn">Sign out</button>
-      </div>
-    </div>
-
-    <div class="footer" style="display:flex; gap: 8px; justify-content: center;">
+    <div class="footer" style="display:flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
       <button class="small-link" id="how-link">How to play</button>
       <button class="small-link" id="browse-link">Browse locations</button>
+      <button class="small-link" id="signin-link" style="display: none;">Sign in</button>
     </div>
   </section>
 
@@ -1360,6 +1320,24 @@
     <div class="modal-actions">
       <button class="btn danger" id="leave-confirm">Leave anyway</button>
       <button class="btn ghost"  id="leave-cancel">Stay in game</button>
+    </div>
+  </div>
+</div>
+
+<div id="signin-modal" class="modal-back" aria-modal="true" role="dialog">
+  <div class="modal-card">
+    <h3 id="signin-modal-title">Sign in</h3>
+    <p id="signin-modal-desc" style="font-family: var(--serif); font-size: 14px; color: var(--ink-mute); line-height: 1.4; margin: 8px 0 14px;">
+      Sign in with Google to save your custom location packs and reuse them in any room.
+    </p>
+    <div id="signin-btn-host" style="display: flex; justify-content: center; min-height: 44px;"></div>
+    <div class="user-row" id="user-row" style="display: none; margin-top: 4px;">
+      <img id="user-pic" alt="">
+      <span class="who" id="user-name"></span>
+    </div>
+    <div class="actions">
+      <button class="btn ghost" id="signin-modal-close">Close</button>
+      <button class="btn danger" id="signout-btn" style="display: none;">Sign out</button>
     </div>
   </div>
 </div>
@@ -1596,6 +1574,11 @@ function handleServerMessage(msg) {
       localStorage.setItem('spyfall_auth', msg.sessionToken);
       renderAuthUI();
       renderCustomLocationsPanel();
+      const m = $('signin-modal');
+      if (m && m.classList.contains('show')) {
+        // Brief beat so the user sees "Signed in", then close
+        setTimeout(() => m.classList.remove('show'), 600);
+      }
       break;
     }
     case 'authError': {
@@ -1755,9 +1738,26 @@ function renderCustomLocationsPanel() {
 
 function renderAuthUI() {
   const signedIn = !!state.user;
+  const link = $('signin-link');
+  if (state.googleClientId) {
+    link.style.display = '';
+    if (signedIn) {
+      const first = (state.user.name || state.user.email || 'You').split(' ')[0];
+      link.textContent = `Signed in as ${first}`;
+    } else {
+      link.textContent = 'Sign in';
+    }
+  } else {
+    link.style.display = 'none';
+  }
+  // Modal contents
   $('user-row').style.display = signedIn ? 'flex' : 'none';
   $('signin-btn-host').style.display = signedIn ? 'none' : 'flex';
-  $('auth-label').textContent = signedIn ? 'Operative · cleared' : 'Secure channel · optional';
+  $('signout-btn').style.display = signedIn ? 'block' : 'none';
+  $('signin-modal-title').textContent = signedIn ? 'Operative · cleared' : 'Sign in';
+  $('signin-modal-desc').textContent = signedIn
+    ? 'Saved packs follow you across rooms while signed in.'
+    : 'Sign in with Google to save your custom location packs and reuse them in any room.';
   if (signedIn) {
     $('user-name').textContent = state.user.name || state.user.email || 'You';
     $('user-pic').src = state.user.picture || '';
@@ -2167,15 +2167,11 @@ fetch('/config.json', { cache: 'no-store' })
   .then(cfg => {
     state.googleClientId = cfg.googleClientId || null;
     if (!state.googleClientId) {
-      $('auth-label').textContent = 'Channel offline';
-      $('signin-btn-host').textContent = '— GOOGLE_CLIENT_ID NOT SET —';
-      $('signin-btn-host').style.color = 'var(--muted)';
-      $('signin-btn-host').style.fontFamily = 'var(--mono)';
-      $('signin-btn-host').style.fontSize = '10px';
-      $('signin-btn-host').style.letterSpacing = '0.18em';
-      $('signin-btn-host').style.padding = '12px';
+      // Sign-in not configured — link stays hidden via renderAuthUI()
+      renderAuthUI();
       return;
     }
+    renderAuthUI();
     // GIS script may load before or after this — handle both.
     if (window.google && google.accounts && google.accounts.id) {
       initGoogleSignIn();
@@ -2193,6 +2189,18 @@ fetch('/config.json', { cache: 'no-store' })
 
 $('signout-btn').addEventListener('click', () => {
   send({ t: 'signOut', sessionToken: state.authToken });
+  $('signin-modal').classList.remove('show');
+});
+
+$('signin-link').addEventListener('click', () => {
+  if (!state.googleClientId) return;
+  $('signin-modal').classList.add('show');
+});
+$('signin-modal-close').addEventListener('click', () => {
+  $('signin-modal').classList.remove('show');
+});
+$('signin-modal').addEventListener('click', (e) => {
+  if (e.target === $('signin-modal')) $('signin-modal').classList.remove('show');
 });
 
 $('toggle-packs-btn').addEventListener('click', () => {
