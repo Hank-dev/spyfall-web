@@ -547,6 +547,12 @@
     color: var(--text);
     box-shadow: 0 0 16px rgba(124,255,122,0.40);
   }
+  .pack-toggles .seg[data-pack="custom"] { color: #ff9eef; }
+  .pack-toggles .seg[data-pack="custom"].on {
+    background: rgba(255,158,239,0.18);
+    color: #fff;
+    border-color: #ff9eef;
+  }
   .pack-toggles .seg[data-pack="gloshaugen"] { color: #5fb0ff; }
   .pack-toggles .seg[data-pack="gloshaugen"].on {
     background: linear-gradient(135deg, rgba(0,94,184,0.55), rgba(95,176,255,0.40));
@@ -557,6 +563,30 @@
   .duration-row { display: flex; align-items: center; gap: 12px; }
   .duration-row input[type=range] { flex: 1; }
   .duration-row .val { font-weight: 800; font-size: 18px; min-width: 70px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ===== custom locations ===== */
+  .custom-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .custom-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .custom-row .name { flex: 1; font-weight: 600; font-size: 14px; word-break: break-word; }
+  .custom-row .meta { color: var(--muted); font-size: 12px; flex-shrink: 0; }
+  .custom-row .del {
+    font: inherit; font-size: 14px;
+    background: transparent; border: none; color: var(--muted);
+    width: 28px; height: 28px; border-radius: 8px; cursor: pointer;
+    flex-shrink: 0;
+  }
+  .custom-row .del:hover { color: var(--red); background: rgba(255,255,255,0.08); }
+  .custom-add textarea.input { resize: vertical; min-height: 90px; font-size: 14px; }
+  .custom-add .input + .input,
+  .custom-add .input + textarea.input,
+  .custom-add textarea.input + .btn { margin-top: 6px; }
+  .custom-empty { text-align: center; padding: 8px 0; font-size: 13px; color: var(--muted); }
 
   input[type=range] {
     -webkit-appearance: none; appearance: none;
@@ -838,6 +868,18 @@
         <div class="seg" data-pack="wonders">Wonders</div>
         <div class="seg" data-pack="rick-morty">🛸 Rick & Morty</div>
         <div class="seg" data-pack="gloshaugen">🏰 Gløshaugen</div>
+        <div class="seg" data-pack="custom">✏️ Custom</div>
+      </div>
+    </div>
+
+    <div class="panel" id="custom-locations-panel" style="display: none;">
+      <h3>Custom locations <span id="custom-count" class="muted" style="font-weight: 600;">(0)</span></h3>
+      <div id="custom-list" class="custom-list"></div>
+      <div class="custom-add">
+        <input class="input" id="custom-name" placeholder="Location name" maxlength="60">
+        <input class="input" id="custom-emoji" placeholder="Emoji (optional)" maxlength="8">
+        <textarea class="input" id="custom-roles" placeholder="One role per line (need 2–16)"></textarea>
+        <button class="btn ghost compact" id="custom-add-btn" style="margin-top: 8px; width: 100%;">Add location</button>
       </div>
     </div>
 
@@ -983,6 +1025,7 @@ const state = {
   players: [],
   serverState: 'lobby',
   settings: { durationSec: 480, pack: 'all' },
+  customLocations: [],
   round: null,        // { isSpy, location, role, firstAskerName, endsAt, allLocations }
   struck: new Set(),
   struckPlayers: new Set(),
@@ -1100,6 +1143,7 @@ function handleServerMessage(msg) {
       state.players = msg.players;
       state.serverState = msg.state;
       state.settings = msg.settings || state.settings;
+      state.customLocations = msg.customLocations || [];
       state.isHost = state.myId === state.hostId;
       renderLobby();
       if (state.serverState === 'inRound') renderSuspectGrid();
@@ -1216,6 +1260,38 @@ function renderLobby() {
   $('duration-val').textContent = mins;
   document.querySelectorAll('.pack-toggles .seg').forEach(s => {
     s.classList.toggle('on', s.dataset.pack === state.settings.pack);
+  });
+
+  renderCustomLocationsPanel();
+}
+
+function renderCustomLocationsPanel() {
+  const panel = $('custom-locations-panel');
+  if (!state.isHost || state.serverState === 'inRound') {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+  const customs = state.customLocations || [];
+  $('custom-count').textContent = `(${customs.length})`;
+  const list = $('custom-list');
+  list.innerHTML = '';
+  if (customs.length === 0) {
+    list.innerHTML = '<div class="custom-empty">No custom locations yet — add one below.</div>';
+    return;
+  }
+  customs.forEach(loc => {
+    const row = document.createElement('div');
+    row.className = 'custom-row';
+    row.innerHTML = `
+      <span class="name">${loc.emoji ? loc.emoji + ' ' : ''}${escapeHTML(loc.name)}</span>
+      <span class="meta">${loc.roles.length} roles</span>
+      <button class="del" data-del="${loc.id}" title="Delete" aria-label="Delete">✕</button>
+    `;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', () => send({ t: 'removeCustomLocation', id: btn.dataset.del }));
   });
 }
 
@@ -1467,6 +1543,21 @@ document.querySelectorAll('.pack-toggles .seg').forEach(s => {
   });
 });
 
+$('custom-add-btn').addEventListener('click', () => {
+  if (!state.isHost) return;
+  const name = $('custom-name').value.trim();
+  const emoji = $('custom-emoji').value.trim();
+  const roles = $('custom-roles').value
+    .split('\n').map(r => r.trim()).filter(Boolean);
+  if (!name) { toast('Location name required', 'error'); return; }
+  if (roles.length < 2) { toast('Add at least 2 roles (one per line)', 'error'); return; }
+  send({ t: 'addCustomLocation', name, emoji, roles });
+  $('custom-name').value = '';
+  $('custom-emoji').value = '';
+  $('custom-roles').value = '';
+  $('custom-name').focus();
+});
+
 $('start-btn').addEventListener('click', () => send({ t: 'startRound' }));
 $('end-round-btn').addEventListener('click', () => {
   if (confirm('End round and reveal the spy?')) send({ t: 'endRound' });
@@ -1496,7 +1587,7 @@ function escapeHTML(s) {
 // ============================================================
 let ALL_LOCS = [];
 
-const PACK_LABEL = { classic:'Classic', outdoor:'Outdoor', weird:'Weird', adult:'18+', spicy:'⚠️ Dark', 't-town':'T-Town', fictional:'Fictional', rooms:'Rooms', wonders:'Wonders', 'rick-morty':'🛸 Rick & Morty', gloshaugen:'🏰 Gløshaugen' };
+const PACK_LABEL = { classic:'Classic', outdoor:'Outdoor', weird:'Weird', adult:'18+', spicy:'⚠️ Dark', 't-town':'T-Town', fictional:'Fictional', rooms:'Rooms', wonders:'Wonders', 'rick-morty':'🛸 Rick & Morty', gloshaugen:'🏰 Gløshaugen', custom:'✏️ Custom' };
 let browseFilter = 'all';
 let openCard = null;
 

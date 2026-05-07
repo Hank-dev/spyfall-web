@@ -215,6 +215,43 @@ def public_player(p):
 def public_loc(l):
     return {"id": l["id"], "name": l["name"], "pack": l["pack"], "emoji": l.get("emoji", "")}
 
+def get_pack_pool(room, pack_id):
+    if pack_id == "custom":
+        return list(room.get("customLocations", []))
+    if pack_id == "all":
+        return list(LOCATIONS)
+    return [l for l in LOCATIONS if l["pack"] == pack_id]
+
+def sanitize_custom_location(payload):
+    name = str(payload.get("name") or "").strip()
+    name = "".join(ch for ch in name if ch.isprintable())[:60]
+    if not name:
+        return None, "Location name required"
+    emoji = str(payload.get("emoji") or "").strip()
+    emoji = "".join(ch for ch in emoji if ch.isprintable())[:8]
+    raw_roles = payload.get("roles") or []
+    if not isinstance(raw_roles, list):
+        return None, "Roles must be a list"
+    roles = []
+    seen = set()
+    for r in raw_roles:
+        s = str(r or "").strip()
+        s = "".join(ch for ch in s if ch.isprintable())[:40]
+        if s and s.lower() not in seen:
+            seen.add(s.lower())
+            roles.append(s)
+    if len(roles) < 2:
+        return None, "Need at least 2 roles"
+    if len(roles) > 16:
+        roles = roles[:16]
+    return {
+        "id": "custom_" + secrets.token_hex(4),
+        "name": name,
+        "emoji": emoji,
+        "pack": "custom",
+        "roles": roles,
+    }, None
+
 async def ws_send(ws, obj):
     if ws is None:
         return
@@ -231,6 +268,7 @@ async def broadcast_room(room):
         "players": [public_player(p) for p in room["players"]],
         "state": room["state"],
         "settings": room["settings"],
+        "customLocations": room.get("customLocations", []),
     })
     for p in room["players"]:
         if p["ws"] is not None:
@@ -256,9 +294,9 @@ def find_by_session(sid):
 
 # ---------- game logic ----------
 async def start_round(room, duration_sec, pack_id):
-    pool = LOCATIONS if pack_id == "all" else [l for l in LOCATIONS if l["pack"] == pack_id]
+    pool = get_pack_pool(room, pack_id)
     if not pool:
-        pool = LOCATIONS
+        pool = list(LOCATIONS)
     location = random.choice(pool)
     n = len(room["players"])
     if n < 2:
@@ -343,6 +381,7 @@ async def handle_create(ws, msg):
         "code": code, "players": [player], "hostId": pid,
         "state": "lobby", "round": None, "roundTask": None,
         "settings": {"durationSec": 480, "pack": "all"},
+        "customLocations": [],
     }
     rooms[code] = room
     await ws_send(ws, {"t": "joined", "you": pid, "sessionId": sid, "code": code})
@@ -371,7 +410,7 @@ async def handle_join(ws, msg):
                     "firstAskerName": rd["firstAskerName"],
                     "remainingMs": (rd.get("remainingMs") if rd.get("paused") else max(0, rd["endsAt"] - int(time.time() * 1000))),
                     "durationSec": rd["durationSec"],
-                    "allLocations": [public_loc(l) for l in (LOCATIONS if rd.get("pack","all") == "all" else [x for x in LOCATIONS if x["pack"] == rd.get("pack")])],
+                    "allLocations": [public_loc(l) for l in get_pack_pool(rr, rd.get("pack", "all"))],
                     "paused": rd.get("paused", False),
                 })
             elif rr["state"] == "roundEnded" and rr.get("round"):
@@ -424,8 +463,28 @@ async def handle_message(ws, msg):
             pass
         if "pack" in msg:
             p = str(msg["pack"])
-            if p in ("all", "classic", "outdoor", "weird", "adult", "spicy", "t-town", "fictional", "rooms", "wonders", "rick-morty", "gloshaugen"):
+            if p in ("all", "classic", "outdoor", "weird", "adult", "spicy", "t-town", "fictional", "rooms", "wonders", "rick-morty", "gloshaugen", "custom"):
                 s["pack"] = p
+        await broadcast_room(room)
+
+    elif t == "addCustomLocation":
+        if player["id"] != room["hostId"]: return
+        if room["state"] == "inRound": return
+        if len(room.get("customLocations", [])) >= 30:
+            await ws_send(ws, {"t": "error", "msg": "Custom location limit reached (30)"})
+            return
+        loc, err = sanitize_custom_location(msg)
+        if err:
+            await ws_send(ws, {"t": "error", "msg": err})
+            return
+        room.setdefault("customLocations", []).append(loc)
+        await broadcast_room(room)
+
+    elif t == "removeCustomLocation":
+        if player["id"] != room["hostId"]: return
+        if room["state"] == "inRound": return
+        loc_id = str(msg.get("id", ""))
+        room["customLocations"] = [l for l in room.get("customLocations", []) if l["id"] != loc_id]
         await broadcast_room(room)
 
     elif t == "startRound":
@@ -436,6 +495,9 @@ async def handle_message(ws, msg):
             await ws_send(ws, {"t": "error", "msg": "Need at least 2 connected players"})
             return
         s = room["settings"]
+        if s["pack"] == "custom" and not room.get("customLocations"):
+            await ws_send(ws, {"t": "error", "msg": "Add at least one custom location first"})
+            return
         await start_round(room, s["durationSec"], s["pack"])
 
     elif t == "endRound":
