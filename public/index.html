@@ -948,7 +948,7 @@
       <div class="custom-add">
         <input class="input" id="custom-name" placeholder="Location name" maxlength="60">
         <input class="input" id="custom-emoji" placeholder="Emoji (optional)" maxlength="8">
-        <textarea class="input" id="custom-roles" placeholder="One role per line (need 2–16)"></textarea>
+        <textarea class="input" id="custom-roles" placeholder="One role per line (optional, max 16)"></textarea>
         <button class="btn ghost compact" id="custom-add-btn" style="margin-top: 8px; width: 100%;">Add location</button>
       </div>
       <div class="pack-actions" id="pack-actions" style="display: none;">
@@ -1764,7 +1764,6 @@ $('custom-add-btn').addEventListener('click', () => {
   const roles = $('custom-roles').value
     .split('\n').map(r => r.trim()).filter(Boolean);
   if (!name) { toast('Location name required', 'error'); return; }
-  if (roles.length < 2) { toast('Add at least 2 roles (one per line)', 'error'); return; }
   send({ t: 'addCustomLocation', name, emoji, roles });
   $('custom-name').value = '';
   $('custom-emoji').value = '';

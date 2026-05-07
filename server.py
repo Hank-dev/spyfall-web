@@ -399,8 +399,6 @@ def sanitize_custom_location(payload):
         if s and s.lower() not in seen:
             seen.add(s.lower())
             roles.append(s)
-    if len(roles) < 2:
-        return None, "Need at least 2 roles"
     if len(roles) > 16:
         roles = roles[:16]
     return {
