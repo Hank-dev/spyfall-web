@@ -879,12 +879,12 @@
     </div>
 
     <div class="panel">
-      <h3 style="margin-bottom: 10px;">Players <span style="text-transform: none; color: var(--muted); font-size: 12px; letter-spacing: 0; font-weight: 500;">(long-press to mark as not sus)</span></h3>
+      <h3 style="margin-bottom: 10px;">Players <span style="text-transform: none; color: var(--muted); font-size: 12px; letter-spacing: 0; font-weight: 500;">(tap to mark as not sus)</span></h3>
       <div class="loc-grid" id="player-suspect-grid"></div>
     </div>
 
     <div class="panel">
-      <h3 style="margin-bottom: 10px;">Locations <span style="text-transform: none; color: var(--muted); font-size: 12px; letter-spacing: 0; font-weight: 500;">(long-press to strike)</span></h3>
+      <h3 style="margin-bottom: 10px;">Locations <span style="text-transform: none; color: var(--muted); font-size: 12px; letter-spacing: 0; font-weight: 500;">(tap to strike)</span></h3>
       <div class="loc-grid" id="loc-grid"></div>
     </div>
 
@@ -1257,23 +1257,12 @@ function enterRound() {
     div.textContent = (loc.emoji ? loc.emoji + ' ' : '') + loc.name;
     if (state.struck.has(loc.id)) div.classList.add('struck');
 
-    let pressTimer = null;
-    const start = () => {
-      pressTimer = setTimeout(() => {
-        if (state.struck.has(loc.id)) state.struck.delete(loc.id);
-        else state.struck.add(loc.id);
-        div.classList.toggle('struck');
-        if (navigator.vibrate) navigator.vibrate(30);
-        pressTimer = null;
-      }, 350);
-    };
-    const cancel = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
-    div.addEventListener('touchstart', start, { passive: true });
-    div.addEventListener('touchend', cancel, { passive: true });
-    div.addEventListener('touchmove', cancel, { passive: true });
-    div.addEventListener('mousedown', start);
-    div.addEventListener('mouseup', cancel);
-    div.addEventListener('mouseleave', cancel);
+    div.addEventListener('click', () => {
+      if (state.struck.has(loc.id)) state.struck.delete(loc.id);
+      else state.struck.add(loc.id);
+      div.classList.toggle('struck');
+      if (navigator.vibrate) navigator.vibrate(20);
+    });
     grid.appendChild(div);
   });
 
@@ -1294,23 +1283,12 @@ function renderSuspectGrid() {
     div.textContent = pl.name + (pl.connected ? '' : ' ⚪');
     if (state.struckPlayers.has(pl.id)) div.classList.add('struck');
 
-    let pressTimer = null;
-    const start = () => {
-      pressTimer = setTimeout(() => {
-        if (state.struckPlayers.has(pl.id)) state.struckPlayers.delete(pl.id);
-        else state.struckPlayers.add(pl.id);
-        div.classList.toggle('struck');
-        if (navigator.vibrate) navigator.vibrate(30);
-        pressTimer = null;
-      }, 350);
-    };
-    const cancel = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
-    div.addEventListener('touchstart', start, { passive: true });
-    div.addEventListener('touchend', cancel, { passive: true });
-    div.addEventListener('touchmove', cancel, { passive: true });
-    div.addEventListener('mousedown', start);
-    div.addEventListener('mouseup', cancel);
-    div.addEventListener('mouseleave', cancel);
+    div.addEventListener('click', () => {
+      if (state.struckPlayers.has(pl.id)) state.struckPlayers.delete(pl.id);
+      else state.struckPlayers.add(pl.id);
+      div.classList.toggle('struck');
+      if (navigator.vibrate) navigator.vibrate(20);
+    });
     grid.appendChild(div);
   });
 }
