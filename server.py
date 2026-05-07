@@ -10,7 +10,10 @@ import os
 import random
 import secrets
 import socket
+import sqlite3
 import time
+import urllib.parse
+import urllib.request
 from http import HTTPStatus
 from pathlib import Path
 
@@ -20,6 +23,8 @@ from websockets.http11 import Response
 
 PORT = int(os.environ.get("PORT", "3000"))
 PUBLIC = (Path(__file__).parent / "public").resolve()
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
+DB_PATH = os.environ.get("DB_PATH") or ("/data/spyfall.db" if os.path.isdir("/data") else str(Path(__file__).parent / "spyfall.db"))
 
 LOCATIONS = [
     {"id":"airplane","name":"Airplane","emoji":"✈️","pack":"classic","roles":["First Class Passenger","Air Marshal","Mechanic","Pilot","Flight Attendant","Co-Pilot","Customs Agent","Stewardess"]},
@@ -192,6 +197,160 @@ MIME = {
 
 CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no I, O, 0, 1
 rooms: dict[str, dict] = {}
+ws_user: dict = {}  # ws -> user_id (signed-in only)
+db: sqlite3.Connection | None = None
+
+
+# ---------- database ----------
+def db_init():
+    global db
+    db_path = Path(DB_PATH)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    db = sqlite3.connect(str(db_path), check_same_thread=False)
+    db.executescript("""
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY,
+      google_sub TEXT UNIQUE NOT NULL,
+      email TEXT,
+      name TEXT,
+      picture TEXT,
+      created_at INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS saved_packs (
+      id INTEGER PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      emoji TEXT,
+      locations_json TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_packs_user ON saved_packs(user_id);
+    CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+    """)
+    db.commit()
+
+
+def upsert_user(google_sub, email, name, picture):
+    now = int(time.time())
+    cur = db.execute("SELECT id FROM users WHERE google_sub = ?", (google_sub,))
+    row = cur.fetchone()
+    if row:
+        user_id = row[0]
+        db.execute("UPDATE users SET email=?, name=?, picture=? WHERE id=?",
+                   (email, name, picture, user_id))
+    else:
+        cur = db.execute(
+            "INSERT INTO users (google_sub, email, name, picture, created_at) VALUES (?, ?, ?, ?, ?)",
+            (google_sub, email, name, picture, now))
+        user_id = cur.lastrowid
+    db.commit()
+    return user_id
+
+
+def create_session(user_id):
+    token = secrets.token_urlsafe(32)
+    now = int(time.time())
+    expires = now + 30 * 24 * 3600  # 30 days
+    db.execute(
+        "INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
+        (token, user_id, now, expires))
+    db.commit()
+    return token
+
+
+def session_user(token):
+    if not token:
+        return None
+    now = int(time.time())
+    cur = db.execute(
+        "SELECT u.id, u.email, u.name, u.picture FROM sessions s "
+        "JOIN users u ON u.id = s.user_id "
+        "WHERE s.token = ? AND s.expires_at > ?",
+        (token, now))
+    row = cur.fetchone()
+    if not row:
+        return None
+    return {"id": row[0], "email": row[1], "name": row[2], "picture": row[3]}
+
+
+def delete_session(token):
+    db.execute("DELETE FROM sessions WHERE token = ?", (token,))
+    db.commit()
+
+
+def list_user_packs(user_id):
+    cur = db.execute(
+        "SELECT id, name, emoji, locations_json, created_at, updated_at "
+        "FROM saved_packs WHERE user_id = ? ORDER BY updated_at DESC",
+        (user_id,))
+    out = []
+    for row in cur.fetchall():
+        try:
+            locs = json.loads(row[3])
+        except Exception:
+            locs = []
+        out.append({
+            "id": row[0], "name": row[1], "emoji": row[2] or "",
+            "locations": locs,
+            "createdAt": row[4], "updatedAt": row[5],
+        })
+    return out
+
+
+def insert_pack(user_id, name, emoji, locations):
+    now = int(time.time())
+    cur = db.execute(
+        "INSERT INTO saved_packs (user_id, name, emoji, locations_json, created_at, updated_at) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (user_id, name, emoji, json.dumps(locations, ensure_ascii=False), now, now))
+    db.commit()
+    return cur.lastrowid
+
+
+def delete_user_pack(user_id, pack_id):
+    db.execute("DELETE FROM saved_packs WHERE user_id = ? AND id = ?", (user_id, pack_id))
+    db.commit()
+
+
+def get_user_pack(user_id, pack_id):
+    cur = db.execute(
+        "SELECT name, emoji, locations_json FROM saved_packs WHERE user_id = ? AND id = ?",
+        (user_id, pack_id))
+    row = cur.fetchone()
+    if not row:
+        return None
+    try:
+        locs = json.loads(row[2])
+    except Exception:
+        locs = []
+    return {"name": row[0], "emoji": row[1] or "", "locations": locs}
+
+
+# ---------- google id token verification ----------
+def verify_google_id_token(id_token: str) -> dict:
+    """Verify a Google ID token via tokeninfo endpoint. Returns claims or raises."""
+    if not GOOGLE_CLIENT_ID:
+        raise ValueError("Sign-in not configured")
+    url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + urllib.parse.quote(id_token)
+    req = urllib.request.Request(url, headers={"User-Agent": "spyfall-web"})
+    with urllib.request.urlopen(req, timeout=8) as resp:
+        if resp.status != 200:
+            raise ValueError("Token verification failed")
+        info = json.loads(resp.read().decode("utf-8"))
+    if info.get("aud") != GOOGLE_CLIENT_ID:
+        raise ValueError("Token audience mismatch")
+    if int(info.get("exp", 0)) < int(time.time()):
+        raise ValueError("Token expired")
+    if info.get("iss") not in ("https://accounts.google.com", "accounts.google.com"):
+        raise ValueError("Invalid token issuer")
+    return info
 
 
 # ---------- helpers ----------
@@ -449,6 +608,68 @@ async def handle_message(ws, msg):
     if t == "join":
         await handle_join(ws, msg); return
 
+    # ---- auth (works without a room) ----
+    if t == "googleSignIn":
+        id_token = str(msg.get("idToken") or "")
+        if not id_token:
+            await ws_send(ws, {"t": "authError", "msg": "No ID token"})
+            return
+        try:
+            info = await asyncio.to_thread(verify_google_id_token, id_token)
+        except Exception as e:
+            await ws_send(ws, {"t": "authError", "msg": f"Sign-in failed: {e}"})
+            return
+        user_id = await asyncio.to_thread(
+            upsert_user,
+            info["sub"], info.get("email", ""), info.get("name", ""), info.get("picture", ""))
+        token = await asyncio.to_thread(create_session, user_id)
+        ws_user[ws] = user_id
+        await ws_send(ws, {
+            "t": "authed",
+            "sessionToken": token,
+            "user": {
+                "name": info.get("name", ""),
+                "email": info.get("email", ""),
+                "picture": info.get("picture", ""),
+            },
+        })
+        packs = await asyncio.to_thread(list_user_packs, user_id)
+        await ws_send(ws, {"t": "myPacks", "packs": packs})
+        return
+
+    if t == "auth":
+        token = str(msg.get("sessionToken") or "")
+        user = await asyncio.to_thread(session_user, token)
+        if not user:
+            await ws_send(ws, {"t": "authError", "msg": "Session expired"})
+            return
+        ws_user[ws] = user["id"]
+        await ws_send(ws, {
+            "t": "authed",
+            "sessionToken": token,
+            "user": {"name": user["name"], "email": user["email"], "picture": user["picture"]},
+        })
+        packs = await asyncio.to_thread(list_user_packs, user["id"])
+        await ws_send(ws, {"t": "myPacks", "packs": packs})
+        return
+
+    if t == "signOut":
+        token = str(msg.get("sessionToken") or "")
+        if token:
+            await asyncio.to_thread(delete_session, token)
+        ws_user.pop(ws, None)
+        await ws_send(ws, {"t": "signedOut"})
+        return
+
+    if t == "listMyPacks":
+        uid_ = ws_user.get(ws)
+        if not uid_:
+            await ws_send(ws, {"t": "error", "msg": "Sign in first"})
+            return
+        packs = await asyncio.to_thread(list_user_packs, uid_)
+        await ws_send(ws, {"t": "myPacks", "packs": packs})
+        return
+
     room, player = find_by_ws(ws)
     if not room or not player:
         return
@@ -486,6 +707,65 @@ async def handle_message(ws, msg):
         loc_id = str(msg.get("id", ""))
         room["customLocations"] = [l for l in room.get("customLocations", []) if l["id"] != loc_id]
         await broadcast_room(room)
+
+    elif t == "savePack":
+        uid_ = ws_user.get(ws)
+        if not uid_:
+            await ws_send(ws, {"t": "error", "msg": "Sign in to save packs"})
+            return
+        pack_name = sanitize_name(msg.get("name"))
+        if not pack_name:
+            await ws_send(ws, {"t": "error", "msg": "Pack name required"})
+            return
+        emoji = "".join(ch for ch in str(msg.get("emoji") or "").strip() if ch.isprintable())[:8]
+        locations = room.get("customLocations", [])
+        if not locations:
+            await ws_send(ws, {"t": "error", "msg": "Add some custom locations first"})
+            return
+        await asyncio.to_thread(insert_pack, uid_, pack_name, emoji, locations)
+        packs = await asyncio.to_thread(list_user_packs, uid_)
+        await ws_send(ws, {"t": "myPacks", "packs": packs})
+        await ws_send(ws, {"t": "info", "msg": f'Saved "{pack_name}"'})
+
+    elif t == "loadPack":
+        uid_ = ws_user.get(ws)
+        if not uid_:
+            await ws_send(ws, {"t": "error", "msg": "Sign in to load packs"})
+            return
+        if player["id"] != room["hostId"]: return
+        if room["state"] == "inRound":
+            await ws_send(ws, {"t": "error", "msg": "Can't load during a round"})
+            return
+        try:
+            pack_id = int(msg.get("packId"))
+        except (TypeError, ValueError):
+            return
+        pack = await asyncio.to_thread(get_user_pack, uid_, pack_id)
+        if not pack:
+            await ws_send(ws, {"t": "error", "msg": "Pack not found"})
+            return
+        loaded = []
+        for raw in pack["locations"][:30]:
+            loc, _ = sanitize_custom_location(raw)
+            if loc:
+                loaded.append(loc)
+        room["customLocations"] = loaded
+        room["settings"]["pack"] = "custom"
+        await ws_send(ws, {"t": "info", "msg": f'Loaded "{pack["name"]}"'})
+        await broadcast_room(room)
+
+    elif t == "deletePack":
+        uid_ = ws_user.get(ws)
+        if not uid_:
+            await ws_send(ws, {"t": "error", "msg": "Sign in first"})
+            return
+        try:
+            pack_id = int(msg.get("packId"))
+        except (TypeError, ValueError):
+            return
+        await asyncio.to_thread(delete_user_pack, uid_, pack_id)
+        packs = await asyncio.to_thread(list_user_packs, uid_)
+        await ws_send(ws, {"t": "myPacks", "packs": packs})
 
     elif t == "startRound":
         if player["id"] != room["hostId"]: return
@@ -564,6 +844,7 @@ async def handle_message(ws, msg):
 
 
 async def handle_disconnect(ws):
+    ws_user.pop(ws, None)
     room, player = find_by_ws(ws)
     if not room or not player:
         return
@@ -649,8 +930,18 @@ def process_request(connection, request):
     upgrade = request.headers.get("Upgrade", "") or ""
     if upgrade.lower() == "websocket":
         return None
-    if request.path.split("?", 1)[0] == "/locations.json":
+    path = request.path.split("?", 1)[0]
+    if path == "/locations.json":
         body = json.dumps(LOCATIONS, ensure_ascii=False).encode("utf-8")
+        return Response(HTTPStatus.OK, "OK",
+                        Headers([
+                            ("Content-Type", "application/json; charset=utf-8"),
+                            ("Content-Length", str(len(body))),
+                            ("Cache-Control", "no-store"),
+                        ]),
+                        body)
+    if path == "/config.json":
+        body = json.dumps({"googleClientId": GOOGLE_CLIENT_ID}).encode("utf-8")
         return Response(HTTPStatus.OK, "OK",
                         Headers([
                             ("Content-Type", "application/json; charset=utf-8"),
@@ -671,11 +962,14 @@ def lan_ip() -> str | None:
 
 
 async def main():
+    db_init()
     print("Spyfall is running.")
     print(f"  Local:    http://localhost:{PORT}")
     ip = lan_ip()
     if ip:
         print(f"  LAN:      http://{ip}:{PORT}   (share this with players on the same wifi)")
+    print(f"  DB:       {DB_PATH}")
+    print(f"  Sign-in:  {'configured' if GOOGLE_CLIENT_ID else 'NOT configured (set GOOGLE_CLIENT_ID)'}")
     print("Press Ctrl+C to stop.")
     async with serve(ws_handler, "0.0.0.0", PORT, process_request=process_request):
         await asyncio.Future()

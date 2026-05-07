@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="theme-color" content="#0a0014">
 <title>Spyfall</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root {
     --bg-0: #0a0014;
@@ -588,6 +589,65 @@
   .custom-add textarea.input + .btn { margin-top: 6px; }
   .custom-empty { text-align: center; padding: 8px 0; font-size: 13px; color: var(--muted); }
 
+  /* ===== auth / user ===== */
+  .auth-block {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    margin-top: 18px;
+    padding: 14px;
+    background: var(--glass); border: 1px solid var(--border);
+    border-radius: 16px;
+  }
+  .auth-block .lbl { font-size: 12px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .user-row { display: flex; align-items: center; gap: 10px; width: 100%; }
+  .user-row img { width: 32px; height: 32px; border-radius: 50%; }
+  .user-row .who { flex: 1; font-weight: 600; font-size: 14px; word-break: break-word; }
+  .user-row .signout {
+    font: inherit; font-size: 12px; font-weight: 600;
+    background: transparent; border: 1px solid var(--border-strong);
+    color: var(--muted); padding: 6px 10px; border-radius: 10px;
+    cursor: pointer;
+  }
+  .user-row .signout:hover { color: var(--text); }
+
+  .pack-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .pack-actions .btn { flex: 1; min-width: 0; }
+  .pack-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .pack-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .pack-row .name { flex: 1; font-weight: 600; font-size: 14px; word-break: break-word; }
+  .pack-row .meta { color: var(--muted); font-size: 12px; flex-shrink: 0; }
+  .pack-row button {
+    font: inherit; font-size: 13px; font-weight: 600;
+    background: transparent; border: 1px solid var(--border-strong);
+    color: var(--text); padding: 6px 10px; border-radius: 10px;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .pack-row .load:hover { border-color: var(--cyan); color: var(--cyan); }
+  .pack-row .del:hover  { border-color: var(--red);  color: var(--red); }
+
+  .modal-back {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100; padding: 16px;
+  }
+  .modal-back.show { display: flex; }
+  .modal-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    padding: 22px;
+    max-width: 380px; width: 100%;
+  }
+  .modal-card h3 { margin: 0 0 12px 0; }
+  .modal-card .input + .input { margin-top: 8px; }
+  .modal-card .actions { display: flex; gap: 8px; margin-top: 14px; }
+  .modal-card .actions .btn { flex: 1; }
+
   input[type=range] {
     -webkit-appearance: none; appearance: none;
     height: 6px; background: var(--glass-strong); border-radius: 999px;
@@ -791,6 +851,16 @@
       </button>
     </div>
 
+    <div class="auth-block" id="auth-block">
+      <div class="lbl" id="auth-label">Optional · save your custom packs</div>
+      <div id="signin-btn-host"></div>
+      <div class="user-row" id="user-row" style="display: none;">
+        <img id="user-pic" alt="">
+        <span class="who" id="user-name"></span>
+        <button class="signout" id="signout-btn">Sign out</button>
+      </div>
+    </div>
+
     <div class="footer" style="display:flex; gap: 8px; justify-content: center;">
       <button class="small-link" id="how-link">How to play</button>
       <button class="small-link" id="browse-link">Browse locations</button>
@@ -881,6 +951,14 @@
         <textarea class="input" id="custom-roles" placeholder="One role per line (need 2–16)"></textarea>
         <button class="btn ghost compact" id="custom-add-btn" style="margin-top: 8px; width: 100%;">Add location</button>
       </div>
+      <div class="pack-actions" id="pack-actions" style="display: none;">
+        <button class="btn ghost compact" id="save-pack-btn">💾 Save as pack…</button>
+        <button class="btn ghost compact" id="toggle-packs-btn">📂 My packs ▾</button>
+      </div>
+      <div id="my-packs" class="pack-list" style="display: none;"></div>
+      <p class="muted" id="signin-hint" style="display: none; text-align: center; font-size: 13px; margin-top: 10px;">
+        Sign in on the home screen to save and reuse your custom packs.
+      </p>
     </div>
 
     <div class="panel" id="waiting-panel" style="display: none;">
@@ -1009,6 +1087,18 @@
   </div>
 </div>
 
+<div id="save-pack-modal" class="modal-back" aria-modal="true" role="dialog">
+  <div class="modal-card">
+    <h3>Save as pack</h3>
+    <input class="input" id="save-pack-name" placeholder="Pack name (e.g. Halloween)" maxlength="40">
+    <input class="input" id="save-pack-emoji" placeholder="Emoji (optional)" maxlength="8">
+    <div class="actions">
+      <button class="btn" id="save-pack-confirm">Save</button>
+      <button class="btn ghost" id="save-pack-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
@@ -1031,6 +1121,11 @@ const state = {
   struckPlayers: new Set(),
   timerInterval: null,
   reconnectTimer: null,
+  authToken: localStorage.getItem('spyfall_auth') || null,
+  user: null,         // { name, email, picture } when signed in
+  savedPacks: [],
+  googleClientId: null,
+  packsOpen: false,
 };
 
 // ============================================================
@@ -1091,6 +1186,10 @@ function connect() {
 
   ws.addEventListener('open', () => {
     setConn(true, 'Connected');
+    // Re-authenticate if we have a saved token
+    if (state.authToken) {
+      send({ t: 'auth', sessionToken: state.authToken });
+    }
     // If we have a stored session, try to rejoin
     if (state.sessionId && state.code) {
       send({ t: 'join', code: state.code, sessionId: state.sessionId });
@@ -1210,6 +1309,43 @@ function handleServerMessage(msg) {
       toast(msg.msg || 'Error', 'error');
       break;
     }
+    case 'info': {
+      toast(msg.msg || '', 'ok');
+      break;
+    }
+    case 'authed': {
+      state.authToken = msg.sessionToken;
+      state.user = msg.user;
+      localStorage.setItem('spyfall_auth', msg.sessionToken);
+      renderAuthUI();
+      renderCustomLocationsPanel();
+      break;
+    }
+    case 'authError': {
+      state.authToken = null;
+      state.user = null;
+      state.savedPacks = [];
+      localStorage.removeItem('spyfall_auth');
+      renderAuthUI();
+      renderCustomLocationsPanel();
+      if (msg.msg && msg.msg !== 'Session expired') toast(msg.msg, 'error');
+      break;
+    }
+    case 'signedOut': {
+      state.authToken = null;
+      state.user = null;
+      state.savedPacks = [];
+      state.packsOpen = false;
+      localStorage.removeItem('spyfall_auth');
+      renderAuthUI();
+      renderCustomLocationsPanel();
+      break;
+    }
+    case 'myPacks': {
+      state.savedPacks = msg.packs || [];
+      renderCustomLocationsPanel();
+      break;
+    }
   }
 }
 
@@ -1278,21 +1414,99 @@ function renderCustomLocationsPanel() {
   list.innerHTML = '';
   if (customs.length === 0) {
     list.innerHTML = '<div class="custom-empty">No custom locations yet — add one below.</div>';
-    return;
+  } else {
+    customs.forEach(loc => {
+      const row = document.createElement('div');
+      row.className = 'custom-row';
+      row.innerHTML = `
+        <span class="name">${loc.emoji ? loc.emoji + ' ' : ''}${escapeHTML(loc.name)}</span>
+        <span class="meta">${loc.roles.length} roles</span>
+        <button class="del" data-del="${loc.id}" title="Delete" aria-label="Delete">✕</button>
+      `;
+      list.appendChild(row);
+    });
+    list.querySelectorAll('[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => send({ t: 'removeCustomLocation', id: btn.dataset.del }));
+    });
   }
-  customs.forEach(loc => {
-    const row = document.createElement('div');
-    row.className = 'custom-row';
-    row.innerHTML = `
-      <span class="name">${loc.emoji ? loc.emoji + ' ' : ''}${escapeHTML(loc.name)}</span>
-      <span class="meta">${loc.roles.length} roles</span>
-      <button class="del" data-del="${loc.id}" title="Delete" aria-label="Delete">✕</button>
-    `;
-    list.appendChild(row);
+
+  // Pack actions (signed-in only)
+  const signedIn = !!state.user;
+  $('pack-actions').style.display = signedIn ? 'flex' : 'none';
+  $('signin-hint').style.display = signedIn ? 'none' : 'block';
+
+  if (signedIn) {
+    $('save-pack-btn').disabled = customs.length === 0;
+    $('save-pack-btn').style.opacity = customs.length === 0 ? '0.5' : '1';
+    $('toggle-packs-btn').textContent = state.packsOpen ? '📂 My packs ▴' : `📂 My packs (${state.savedPacks.length}) ▾`;
+
+    const packList = $('my-packs');
+    packList.style.display = state.packsOpen ? 'flex' : 'none';
+    packList.innerHTML = '';
+    if (state.packsOpen) {
+      if (state.savedPacks.length === 0) {
+        packList.innerHTML = '<div class="custom-empty">No saved packs yet.</div>';
+      } else {
+        state.savedPacks.forEach(p => {
+          const row = document.createElement('div');
+          row.className = 'pack-row';
+          row.innerHTML = `
+            <span class="name">${p.emoji ? p.emoji + ' ' : ''}${escapeHTML(p.name)}</span>
+            <span class="meta">${p.locations.length} loc</span>
+            <button class="load" data-load="${p.id}">Load</button>
+            <button class="del" data-pack-del="${p.id}" aria-label="Delete">✕</button>
+          `;
+          packList.appendChild(row);
+        });
+        packList.querySelectorAll('[data-load]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            if (state.customLocations.length > 0 &&
+                !confirm('This will replace your current custom locations. Continue?')) return;
+            send({ t: 'loadPack', packId: parseInt(btn.dataset.load, 10) });
+          });
+        });
+        packList.querySelectorAll('[data-pack-del]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            if (!confirm('Delete this pack permanently?')) return;
+            send({ t: 'deletePack', packId: parseInt(btn.dataset.packDel, 10) });
+          });
+        });
+      }
+    }
+  }
+}
+
+function renderAuthUI() {
+  const signedIn = !!state.user;
+  $('user-row').style.display = signedIn ? 'flex' : 'none';
+  $('signin-btn-host').style.display = signedIn ? 'none' : 'flex';
+  $('auth-label').textContent = signedIn ? 'Signed in' : 'Optional · save your custom packs';
+  if (signedIn) {
+    $('user-name').textContent = state.user.name || state.user.email || 'You';
+    $('user-pic').src = state.user.picture || '';
+    $('user-pic').style.display = state.user.picture ? 'block' : 'none';
+  }
+}
+
+let googleInitialized = false;
+function initGoogleSignIn() {
+  if (googleInitialized) return;
+  if (!state.googleClientId) return;
+  if (!window.google || !google.accounts || !google.accounts.id) return;
+  googleInitialized = true;
+  google.accounts.id.initialize({
+    client_id: state.googleClientId,
+    callback: (resp) => {
+      if (resp && resp.credential) send({ t: 'googleSignIn', idToken: resp.credential });
+    },
   });
-  list.querySelectorAll('[data-del]').forEach(btn => {
-    btn.addEventListener('click', () => send({ t: 'removeCustomLocation', id: btn.dataset.del }));
-  });
+  const btnEl = $('signin-btn-host');
+  if (btnEl) {
+    btnEl.innerHTML = '';
+    google.accounts.id.renderButton(btnEl, {
+      theme: 'filled_black', size: 'large', shape: 'pill', text: 'signin_with',
+    });
+  }
 }
 
 // ============================================================
@@ -1663,6 +1877,74 @@ fetch('/locations.json', { cache: 'no-store' })
     if (browseEl && browseEl.classList.contains('show')) renderBrowse();
   })
   .catch(err => console.error('Failed to load locations:', err));
+
+// ============================================================
+//  AUTH WIRING
+// ============================================================
+fetch('/config.json', { cache: 'no-store' })
+  .then(r => r.json())
+  .then(cfg => {
+    state.googleClientId = cfg.googleClientId || null;
+    if (!state.googleClientId) {
+      $('auth-label').textContent = 'Sign-in not configured';
+      $('signin-btn-host').textContent = '(GOOGLE_CLIENT_ID env var missing)';
+      $('signin-btn-host').style.color = 'var(--muted)';
+      $('signin-btn-host').style.fontSize = '12px';
+      return;
+    }
+    // GIS script may load before or after this — handle both.
+    if (window.google && google.accounts && google.accounts.id) {
+      initGoogleSignIn();
+    } else {
+      const wait = setInterval(() => {
+        if (window.google && google.accounts && google.accounts.id) {
+          clearInterval(wait);
+          initGoogleSignIn();
+        }
+      }, 200);
+      setTimeout(() => clearInterval(wait), 8000);
+    }
+  })
+  .catch(err => console.error('Failed to load config:', err));
+
+$('signout-btn').addEventListener('click', () => {
+  send({ t: 'signOut', sessionToken: state.authToken });
+});
+
+$('toggle-packs-btn').addEventListener('click', () => {
+  state.packsOpen = !state.packsOpen;
+  if (state.packsOpen) send({ t: 'listMyPacks' });
+  renderCustomLocationsPanel();
+});
+
+$('save-pack-btn').addEventListener('click', () => {
+  if (!state.user) { toast('Sign in first', 'error'); return; }
+  if ((state.customLocations || []).length === 0) {
+    toast('Add some custom locations first', 'error');
+    return;
+  }
+  $('save-pack-name').value = '';
+  $('save-pack-emoji').value = '';
+  $('save-pack-modal').classList.add('show');
+  setTimeout(() => $('save-pack-name').focus(), 50);
+});
+
+$('save-pack-cancel').addEventListener('click', () => {
+  $('save-pack-modal').classList.remove('show');
+});
+$('save-pack-modal').addEventListener('click', (e) => {
+  if (e.target === $('save-pack-modal')) $('save-pack-modal').classList.remove('show');
+});
+$('save-pack-confirm').addEventListener('click', () => {
+  const name = $('save-pack-name').value.trim();
+  const emoji = $('save-pack-emoji').value.trim();
+  if (!name) { toast('Pack name required', 'error'); return; }
+  send({ t: 'savePack', name, emoji });
+  $('save-pack-modal').classList.remove('show');
+});
+
+// Initial render
+renderAuthUI();
 
 // Boot
 connect();
