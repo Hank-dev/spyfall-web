@@ -850,9 +850,9 @@
 
   /* ===== auth / user ===== */
   .auth-block {
-    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
     margin-top: 22px;
-    padding: 14px;
+    padding: 18px 14px 14px;
     background: var(--steel);
     border: 1px solid var(--line-strong);
     border-radius: 3px;
@@ -866,7 +866,21 @@
   .auth-block .lbl {
     font-family: var(--mono); font-size: 9.5px; color: var(--mustard);
     letter-spacing: 0.28em; text-transform: uppercase; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 8px;
   }
+  .auth-block .lbl::before {
+    content: "//"; color: var(--rust);
+  }
+  /* Frame the Google button so it harmonizes with the dossier */
+  #signin-btn-host {
+    padding: 6px;
+    background: rgba(7,9,10,0.6);
+    border: 1px dashed var(--line);
+    border-radius: 2px;
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 48px;
+  }
+  #signin-btn-host > div { display: block; }
   .user-row { display: flex; align-items: center; gap: 10px; width: 100%; }
   .user-row img { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line-strong); }
   .user-row .who {
@@ -1743,7 +1757,7 @@ function renderAuthUI() {
   const signedIn = !!state.user;
   $('user-row').style.display = signedIn ? 'flex' : 'none';
   $('signin-btn-host').style.display = signedIn ? 'none' : 'flex';
-  $('auth-label').textContent = signedIn ? 'Signed in' : 'Optional · save your custom packs';
+  $('auth-label').textContent = signedIn ? 'Operative · cleared' : 'Secure channel · optional';
   if (signedIn) {
     $('user-name').textContent = state.user.name || state.user.email || 'You';
     $('user-pic').src = state.user.picture || '';
@@ -1767,7 +1781,12 @@ function initGoogleSignIn() {
   if (btnEl) {
     btnEl.innerHTML = '';
     google.accounts.id.renderButton(btnEl, {
-      theme: 'filled_black', size: 'large', shape: 'pill', text: 'signin_with',
+      theme: 'outline',
+      size: 'large',
+      shape: 'rectangular',
+      text: 'signin_with',
+      logo_alignment: 'center',
+      width: 260,
     });
   }
 }
@@ -2148,10 +2167,13 @@ fetch('/config.json', { cache: 'no-store' })
   .then(cfg => {
     state.googleClientId = cfg.googleClientId || null;
     if (!state.googleClientId) {
-      $('auth-label').textContent = 'Sign-in not configured';
-      $('signin-btn-host').textContent = '(GOOGLE_CLIENT_ID env var missing)';
+      $('auth-label').textContent = 'Channel offline';
+      $('signin-btn-host').textContent = '— GOOGLE_CLIENT_ID NOT SET —';
       $('signin-btn-host').style.color = 'var(--muted)';
-      $('signin-btn-host').style.fontSize = '12px';
+      $('signin-btn-host').style.fontFamily = 'var(--mono)';
+      $('signin-btn-host').style.fontSize = '10px';
+      $('signin-btn-host').style.letterSpacing = '0.18em';
+      $('signin-btn-host').style.padding = '12px';
       return;
     }
     // GIS script may load before or after this — handle both.
