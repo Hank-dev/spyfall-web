@@ -160,7 +160,9 @@ LOCATIONS = [
     {"id":"trondheim_torg","name":"Trondheim Torg","emoji":"🛍️","pack":"t-town","roles":["Mall Security Guard","Store Clerk","Window Shopper","Cleaner","Mall Manager","Food Court Worker","Teen Hanging Out","Lost Tourist"]},
     {"id":"bakklandet","name":"Bakklandet","emoji":"☕","pack":"t-town","roles":["Barista","Tourist With Camera","Pastry Baker","Outdoor Café Customer","Local on a Walk","Cyclist","Old House Owner","Street Photographer"]},
     {"id":"realfagsbygget","name":"Realfagsbygget","emoji":"🧪","pack":"t-town","roles":["Professor","PhD Student","Lab Technician","Bachelor Student Cramming","Janitor","Cafeteria Worker","Lost First-Year","Building Coordinator"]},
-
+    {"id":"st_olavs","name":"St. Olavs","emoji":"🏥","pack":"t-town","roles":["Doctor","Nurse","Medical Student","Patient","Surgeon","Hospital Visitor","Paramedic","Radiologist","Cafeteria Worker"]},
+    {"id":"bymarka","name":"Bymarka","emoji":"🌲","pack":"t-town","roles":["Hiker","Dog Walker","Cross-country Skier","Mountain Biker","Forager","Picnic Goer","Trail Runner","Nature Photographer","Cabin Owner"]},
+    {"id":"dragvoll","name":"Dragvoll","emoji":"📚","pack":"t-town","roles":["Social Science Student","Lecturer","International Student","Library Staff","Campus Cafeteria Worker","PhD Candidate","Erasmus Student","Professor","Sports Student"]}
     # ---- Gløshaugen ----
     {"id":"hovedbygget","name":"Hovedbygget","emoji":"🏰","pack":"gloshaugen","roles":["Rector","Dean","Tour Guide","Tourist Taking Photos","PhD Defending Thesis","Janitor","Building Watchman","Lost First-Year"]},
     {"id":"sentralbygg","name":"Sentralbygg","emoji":"🏢","pack":"gloshaugen","roles":["Architect Lecturer","Engineering Student","Elevator Repair Tech","Janitor","Lost Visitor","Cafeteria Worker","IT Support","Stairwell Climber"]},
