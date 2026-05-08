@@ -182,6 +182,10 @@ LOCATIONS = [
     {"id":"crack_lair","name":"Baltimore Crack Lair","emoji":"💉","pack":"spicy","roles":["Tweaker Getting High","Cynical Drug Dealer","Lookout","Money Counter","Strung-Out Regular","Undercover Cop","Supplier","Desperate New Customer"]},
     {"id":"prison_shower","name":"Prison Shower","emoji":"🚿","pack":"spicy","roles":["Newcomer","Gang Leader","Snitch","Lifer","Guard","Trustee","Old-Timer","Shower Lookout"]},
     {"id":"mental_hospital","name":"Experimental Unit, 1950s Mental Hospital","emoji":"🧠","pack":"spicy","roles":["Lobotomy Patient","Head Doctor","Skeptical Nurse","Test Subject","Orderly","Visiting Researcher","Janitor","Patient Who Knows Too Much"]},
+    {"id":"titanic_lower_deck","name":"Titanic Sinking - Lower Decks","emoji":"🚢","pack":"spicy","roles":["Steerage Passenger","Panicking Mother","Locked Gate Guard","Flooded Cabin Occupant","Ship Crew","Rich Man Looking for Boat","Engineer","Thief Looting"]},
+    {"id":"dahmer_apartment","name":"Jeffrey Dahmer's Apartment","emoji":"🍖","pack":"spicy","roles":["Jeffrey Dahmer","Potential Victim","Neighbor","Police Officer","Delivery Driver","Escaping Victim","Drugged Guest","Landlord"]},
+    {"id":"sinaloa_cartel_hq","name":"Sinaloa Cartel HQ","emoji": "🏠","pack": "spicy","roles": ["El Jefe (Cartel Boss)","Sicario (Hitman)","Head Cook (Meth/Fentanyl)","Money Launderer","Corrupt Police Commander","Young Sicario Recruit","Kidnapped Businessman","Tunnel Engineer", "Personal Bodyguard","American Smuggler"]}
+    {"id":"aryan_brotherhood_meetup","name":"Aryan Brotherhood Meetup","emoji":"⚡","pack":"spicy","roles":["Shot Caller","Aryan Brotherhood Member","Prospect","Enforcer","Drug Mule","Tattoo Artist","Corrupt Guard","Sympathizer","Rival Gang Member","Undercover Inmate"]}
 ]
 
 
