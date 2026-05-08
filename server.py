@@ -190,7 +190,8 @@ LOCATIONS = [
     {"id":"necrophilia_funeral_home","name":"Necrophilic Funeral Home","emoji":"⚰️","pack":"spicy","roles":["Mortician","Grieving Relative","Corpse","Curious Employee","Client","Embalmer","Night Janitor","Detective"]},
     {"id":"human_centipede_clinic","name":"Human Centipede Clinic","emoji":"🪱","pack":"spicy","roles":["Dr. Heiter","First Segment","Middle Segment","Last Segment","Nurse","New Patient","Security Guard","Janitor"]},
     {"id":"euthanasia_party","name":"Euthanasia Party","emoji":"💊","pack":"spicy","roles":["Doctor","Dying Guest","Party Entertainer","Family Member","Reluctant Participant","Drug Supplier","Cameraman","Grieving Spouse"]},
-    {"id":"pedophile_priesthood","name":"Catholic Pedophile Seminary","emoji":"⛪","pack":"spicy","roles":["Priest","Altar Boy","Bishop","Confession Listener","New Seminarian","Cover-up Lawyer","Investigative Reporter","Guilty Janitor"]}
+    {"id":"pedophile_priesthood","name":"Catholic Pedophile Seminary","emoji":"⛪","pack":"spicy","roles":["Priest","Altar Boy","Bishop","Confession Listener","New Seminarian","Cover-up Lawyer","Investigative Reporter","Guilty Janitor"]},
+    {"id":"skinning_workshop","name":"Human Skinning Workshop","emoji":"🪚","pack":"spicy","roles":["Master Skinner","Fresh Victim","Leather Worker","Client Collector","Apprentice","Screaming Subject","Tool Sharpener","Delivery Driver"]}
 ]
 
 
