@@ -185,7 +185,12 @@ LOCATIONS = [
     {"id":"titanic_lower_deck","name":"Titanic Sinking - Lower Decks","emoji":"🚢","pack":"spicy","roles":["Steerage Passenger","Panicking Mother","Locked Gate Guard","Flooded Cabin Occupant","Ship Crew","Rich Man Looking for Boat","Engineer","Thief Looting"]},
     {"id":"dahmer_apartment","name":"Jeffrey Dahmer's Apartment","emoji":"🍖","pack":"spicy","roles":["Jeffrey Dahmer","Potential Victim","Neighbor","Police Officer","Delivery Driver","Escaping Victim","Drugged Guest","Landlord"]},
     {"id":"sinaloa_cartel_hq","name":"Sinaloa Cartel HQ","emoji": "🏠","pack": "spicy","roles": ["El Jefe (Cartel Boss)","Sicario (Hitman)","Head Cook (Meth/Fentanyl)","Money Launderer","Corrupt Police Commander","Young Sicario Recruit","Kidnapped Businessman","Tunnel Engineer", "Personal Bodyguard","American Smuggler"]},
-    {"id":"aryan_brotherhood_meetup","name":"Aryan Brotherhood Meetup","emoji":"⚡","pack":"spicy","roles":["Shot Caller","Aryan Brotherhood Member","Prospect","Enforcer","Drug Mule","Tattoo Artist","Corrupt Guard","Sympathizer","Rival Gang Member","Undercover Inmate"]}
+    {"id":"black_plague_village","name":"1348 Black Death Village","emoji":"☠️","pack":"spicy","roles":["Plague Doctor","Dying Villager","Gravedigger","Flagellant","Witch Hunter","Infected Child","Desperate Merchant","Priest Giving Last Rites"]},
+    {"id":"aryan_brotherhood_meetup","name":"Aryan Brotherhood Meetup","emoji":"⚡","pack":"spicy","roles":["Shot Caller","Aryan Brotherhood Member","Prospect","Enforcer","Drug Mule","Tattoo Artist","Corrupt Guard","Sympathizer","Rival Gang Member","Undercover Inmate"]},
+    {"id":"necrophilia_funeral_home","name":"Necrophilic Funeral Home","emoji":"⚰️","pack":"spicy","roles":["Mortician","Grieving Relative","Corpse","Curious Employee","Client","Embalmer","Night Janitor","Detective"]},
+    {"id":"human_centipede_clinic","name":"Human Centipede Clinic","emoji":"🪱","pack":"spicy","roles":["Dr. Heiter","First Segment","Middle Segment","Last Segment","Nurse","New Patient","Security Guard","Janitor"]},
+    {"id":"euthanasia_party","name":"Euthanasia Party","emoji":"💊","pack":"spicy","roles":["Doctor","Dying Guest","Party Entertainer","Family Member","Reluctant Participant","Drug Supplier","Cameraman","Grieving Spouse"]},
+    {"id":"pedophile_priesthood","name":"Catholic Pedophile Seminary","emoji":"⛪","pack":"spicy","roles":["Priest","Altar Boy","Bishop","Confession Listener","New Seminarian","Cover-up Lawyer","Investigative Reporter","Guilty Janitor"]}
 ]
 
 
