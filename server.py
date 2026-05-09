@@ -163,6 +163,7 @@ LOCATIONS = [
     {"id":"st_olavs","name":"St. Olavs","emoji":"🏥","pack":"t-town","roles":["Doctor","Nurse","Medical Student","Patient","Surgeon","Hospital Visitor","Paramedic","Radiologist","Cafeteria Worker"]},
     {"id":"bymarka","name":"Bymarka","emoji":"🌲","pack":"t-town","roles":["Hiker","Dog Walker","Cross-country Skier","Mountain Biker","Forager","Picnic Goer","Trail Runner","Nature Photographer","Cabin Owner"]},
     {"id":"dragvoll","name":"Dragvoll","emoji":"📚","pack":"t-town","roles":["Social Science Student","Lecturer","International Student","Library Staff","Campus Cafeteria Worker","PhD Candidate","Erasmus Student","Professor","Sports Student"]},
+    {"id":"vaar_frues_kirke","name":"Vår Frues kirke","emoji":"⛪","pack":"t-town","roles":["Priest","Organist","Tourist Visiting","Candle Lighter","Local Worshipper","Church Volunteer","Tweaker","Historian Guide","Asphalt Enjoyer","Homeless Shelter Seeker"]}
     # ---- Gløshaugen ----
     {"id":"hovedbygget","name":"Hovedbygget","emoji":"🏰","pack":"gloshaugen","roles":["Rector","Dean","Tour Guide","Tourist Taking Photos","PhD Defending Thesis","Janitor","Building Watchman","Lost First-Year"]},
     {"id":"sentralbygg","name":"Sentralbygg","emoji":"🏢","pack":"gloshaugen","roles":["Architect Lecturer","Engineering Student","Elevator Repair Tech","Janitor","Lost Visitor","Cafeteria Worker","IT Support","Stairwell Climber"]},
