@@ -783,7 +783,7 @@
     background: transparent;
     border: 1px solid var(--line-strong);
     border-radius: 2px;
-    cursor: pointer; user-select: none;
+    cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
   }
   .pack-toggles .seg:hover { color: var(--ink); border-color: var(--ink-mute); }
@@ -1163,7 +1163,7 @@
         <input type="range" id="duration-slider" min="3" max="15" value="8">
         <div class="val"><span id="duration-val">8</span> min</div>
       </div>
-      <label>Locations</label>
+      <label>Locations <span class="muted" style="font-family: var(--serif); font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 12px;">— tap to pick · long-press to combine</span></label>
       <div class="pack-toggles">
         <div class="seg" data-pack="all">All</div>
         <div class="seg" data-pack="classic">Classic</div>
@@ -1370,7 +1370,7 @@ const state = {
   hostId: null,
   players: [],
   serverState: 'lobby',
-  settings: { durationSec: 480, pack: 'all' },
+  settings: { durationSec: 480, packs: ['all'] },
   customLocations: [],
   round: null,        // { isSpy, location, role, firstAskerName, endsAt, allLocations }
   struck: new Set(),
@@ -1655,8 +1655,9 @@ function renderLobby() {
   const mins = Math.round(state.settings.durationSec / 60);
   $('duration-slider').value = mins;
   $('duration-val').textContent = mins;
+  const selectedPacks = new Set(state.settings.packs || ['all']);
   document.querySelectorAll('.pack-toggles .seg').forEach(s => {
-    s.classList.toggle('on', s.dataset.pack === state.settings.pack);
+    s.classList.toggle('on', selectedPacks.has(s.dataset.pack));
   });
 
   renderCustomLocationsPanel();
@@ -2033,10 +2034,55 @@ $('duration-slider').addEventListener('change', () => {
   const mins = parseInt($('duration-slider').value, 10);
   send({ t: 'settings', durationSec: mins * 60 });
 });
+function sendPackSelection(packs) {
+  let cleaned = packs.filter(p => p);
+  if (cleaned.length > 1 && cleaned.includes('all')) {
+    cleaned = cleaned.filter(p => p !== 'all');
+  }
+  if (cleaned.length === 0) cleaned = ['all'];
+  send({ t: 'settings', packs: cleaned });
+}
+
 document.querySelectorAll('.pack-toggles .seg').forEach(s => {
-  s.addEventListener('click', () => {
+  let pressTimer = null;
+  let longPressed = false;
+
+  const startPress = (e) => {
     if (!state.isHost) return;
-    send({ t: 'settings', pack: s.dataset.pack });
+    longPressed = false;
+    pressTimer = setTimeout(() => {
+      longPressed = true;
+      if (navigator.vibrate) navigator.vibrate(20);
+      const pack = s.dataset.pack;
+      const current = new Set(state.settings.packs || ['all']);
+      if (pack === 'all') {
+        sendPackSelection(['all']);
+      } else if (current.has(pack)) {
+        current.delete(pack);
+        sendPackSelection([...current]);
+      } else {
+        current.delete('all');
+        current.add(pack);
+        sendPackSelection([...current]);
+      }
+    }, 450);
+  };
+  const cancelPress = () => {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+  };
+
+  s.addEventListener('mousedown', startPress);
+  s.addEventListener('touchstart', startPress, { passive: true });
+  s.addEventListener('mouseup', cancelPress);
+  s.addEventListener('mouseleave', cancelPress);
+  s.addEventListener('touchend', cancelPress);
+  s.addEventListener('touchcancel', cancelPress);
+  s.addEventListener('touchmove', cancelPress);
+
+  s.addEventListener('click', (e) => {
+    if (!state.isHost) return;
+    if (longPressed) { longPressed = false; e.preventDefault(); return; }
+    sendPackSelection([s.dataset.pack]);
   });
 });
 

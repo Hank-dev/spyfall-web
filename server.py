@@ -387,12 +387,26 @@ def public_player(p):
 def public_loc(l):
     return {"id": l["id"], "name": l["name"], "pack": l["pack"], "emoji": l.get("emoji", "")}
 
-def get_pack_pool(room, pack_id):
-    if pack_id == "custom":
-        return list(room.get("customLocations", []))
-    if pack_id == "all":
-        return list(LOCATIONS)
-    return [l for l in LOCATIONS if l["pack"] == pack_id]
+VALID_PACK_IDS = ("all", "classic", "outdoor", "weird", "adult", "spicy", "t-town", "fictional", "rooms", "wonders", "rick-morty", "gloshaugen", "custom")
+
+def get_packs_pool(room, pack_ids):
+    ids = set(pack_ids or [])
+    if not ids:
+        ids = {"all"}
+    pool = []
+    seen = set()
+    use_all = "all" in ids
+    for l in LOCATIONS:
+        if (use_all or l["pack"] in ids) and l["id"] not in seen:
+            pool.append(l)
+            seen.add(l["id"])
+    if "custom" in ids:
+        for l in room.get("customLocations", []):
+            lid = l.get("id")
+            if lid and lid not in seen:
+                pool.append(l)
+                seen.add(lid)
+    return pool
 
 def sanitize_custom_location(payload):
     name = str(payload.get("name") or "").strip()
@@ -463,8 +477,8 @@ def find_by_session(sid):
 
 
 # ---------- game logic ----------
-async def start_round(room, duration_sec, pack_id):
-    pool = get_pack_pool(room, pack_id)
+async def start_round(room, duration_sec, pack_ids):
+    pool = get_packs_pool(room, pack_ids)
     if not pool:
         pool = list(LOCATIONS)
     location = random.choice(pool)
@@ -492,7 +506,7 @@ async def start_round(room, duration_sec, pack_id):
         "firstAskerName": first_asker["name"],
         "endsAt": ends_at_ms,
         "durationSec": duration_sec,
-        "pack": pack_id,
+        "packs": list(pack_ids),
         "paused": False,
         "remainingMs": None,
     }
@@ -550,7 +564,7 @@ async def handle_create(ws, msg):
     room = {
         "code": code, "players": [player], "hostId": pid,
         "state": "lobby", "round": None, "roundTask": None,
-        "settings": {"durationSec": 480, "pack": "all"},
+        "settings": {"durationSec": 480, "packs": ["all"]},
         "customLocations": [],
     }
     rooms[code] = room
@@ -580,7 +594,7 @@ async def handle_join(ws, msg):
                     "firstAskerName": rd["firstAskerName"],
                     "remainingMs": (rd.get("remainingMs") if rd.get("paused") else max(0, rd["endsAt"] - int(time.time() * 1000))),
                     "durationSec": rd["durationSec"],
-                    "allLocations": [public_loc(l) for l in get_pack_pool(rr, rd.get("pack", "all"))],
+                    "allLocations": [public_loc(l) for l in get_packs_pool(rr, rd.get("packs") or [rd.get("pack", "all")])],
                     "paused": rd.get("paused", False),
                 })
             elif rr["state"] == "roundEnded" and rr.get("round"):
@@ -693,10 +707,22 @@ async def handle_message(ws, msg):
             s["durationSec"] = max(60, min(900, d))
         except (TypeError, ValueError):
             pass
-        if "pack" in msg:
+        if "packs" in msg:
+            raw = msg["packs"]
+            if isinstance(raw, list):
+                cleaned = []
+                seen = set()
+                for p in raw:
+                    p = str(p)
+                    if p in VALID_PACK_IDS and p not in seen:
+                        cleaned.append(p)
+                        seen.add(p)
+                if cleaned:
+                    s["packs"] = cleaned
+        elif "pack" in msg:
             p = str(msg["pack"])
-            if p in ("all", "classic", "outdoor", "weird", "adult", "spicy", "t-town", "fictional", "rooms", "wonders", "rick-morty", "gloshaugen", "custom"):
-                s["pack"] = p
+            if p in VALID_PACK_IDS:
+                s["packs"] = [p]
         await broadcast_room(room)
 
     elif t == "addCustomLocation":
@@ -786,10 +812,11 @@ async def handle_message(ws, msg):
             await ws_send(ws, {"t": "error", "msg": "Need at least 2 connected players"})
             return
         s = room["settings"]
-        if s["pack"] == "custom" and not room.get("customLocations"):
+        packs = s.get("packs") or ["all"]
+        if packs == ["custom"] and not room.get("customLocations"):
             await ws_send(ws, {"t": "error", "msg": "Add at least one custom location first"})
             return
-        await start_round(room, s["durationSec"], s["pack"])
+        await start_round(room, s["durationSec"], packs)
 
     elif t == "endRound":
         if player["id"] != room["hostId"]: return
