@@ -1179,6 +1179,7 @@
         <div class="seg" data-pack="gloshaugen">🏰 Gløshaugen</div>
         <div class="seg" data-pack="custom">✏️ Custom</div>
       </div>
+      <button class="small-link" id="lobby-browse-link" style="margin-top: 10px;">Browse locations ↗</button>
     </div>
 
     <div class="panel" id="custom-locations-panel" style="display: none;">
@@ -1273,7 +1274,7 @@
 
   <!-- ===== BROWSE LOCATIONS ===== -->
   <section id="screen-browse" class="screen">
-    <button class="small-link" data-back="home" style="align-self: flex-start;">Back</button>
+    <button class="small-link" id="browse-back" style="align-self: flex-start;">← Back</button>
     <h1 style="margin-top: 16px;">Locations</h1>
     <p style="margin-top: 4px; margin-bottom: 14px;">Tap any card to see the roles.</p>
 
@@ -2084,6 +2085,7 @@ let ALL_LOCS = [];
 
 const PACK_LABEL = { classic:'Classic', outdoor:'Outdoor', weird:'Weird', adult:'18+', spicy:'⚠️ Dark', 't-town':'T-Town', fictional:'Fictional', rooms:'Rooms', wonders:'Wonders', 'rick-morty':'🛸 Rick & Morty', gloshaugen:'🏰 Gløshaugen', custom:'✏️ Custom' };
 let browseFilter = 'all';
+let browseBackTo = 'home';
 let openCard = null;
 
 function renderBrowse() {
@@ -2126,12 +2128,17 @@ function renderBrowse() {
   }
 }
 
-$('browse-link').addEventListener('click', () => {
+function openBrowse(backTo = 'home') {
+  browseBackTo = backTo;
   browseFilter = 'all';
   document.querySelectorAll('.pf-tab').forEach(t => t.classList.toggle('active', t.dataset.pf === 'all'));
   renderBrowse();
   show('browse');
-});
+}
+
+$('browse-link').addEventListener('click', () => openBrowse('home'));
+$('lobby-browse-link').addEventListener('click', () => openBrowse('lobby'));
+$('browse-back').addEventListener('click', () => show(browseBackTo));
 
 document.getElementById('browse-tabs').addEventListener('click', (e) => {
   const tab = e.target.closest('.pf-tab');
