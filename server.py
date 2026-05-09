@@ -150,7 +150,7 @@ LOCATIONS = [
     {"id":"nanjing_house","name":"Nanjing House","emoji":"🥢","pack":"t-town","roles":["Chef","Waiter","Customer","Manager","Delivery Driver","Dishwasher","Food Critic","Host"]},
     {"id":"sesam","name":"Sesam","emoji":"🍔","pack":"t-town","roles":["Barista","Bartender","Regular","Manager","Chef","Waitress","Food Blogger","Student"]},
     {"id":"sit_treningsenter","name":"SiT Treningsenter","emoji":"🏋️","pack":"t-town","roles":["Personal Trainer","Student","Receptionist","Janitor","Yoga Instructor","Gym Regular","Coach","New Member"]},
-    {"id":"buran","name":"Buran","emoji":"🚬","pack":"t-town","roles":["Bartender","DJ","Bouncer","Regular","Manager","Student","Karaoke Singer","First-Timer"]},
+    {"id":"buran","name":"Buran","emoji":"🚬","pack":"t-town","roles":["Regular","Buran-bro","Asphalt enjoyer","Tweaker","Student","Student","Just walking through","First-Timer"]},
     {"id":"oriental_thai","name":"Oriental Thai Massasje","emoji":"💆","pack":"t-town","roles":["Masseuse","Customer","Receptionist","Owner","Therapist","Apprentice","Booking Agent","Cleaner"]},
     {"id":"dreams_showbar","name":"Dreams Showbar","emoji":"🌙","pack":"t-town","roles":["Performer","Bartender","Bouncer","Customer","DJ","Manager","VIP Guest","Server"]},
     {"id":"kino","name":"Prinsen Kino","emoji":"🎬","pack":"t-town","roles":["Ticket Inspector","Popcorn Vendor","Projectionist","Manager","Date Night Customer","Film Critic","Usher","Cleaning Staff"]},
