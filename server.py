@@ -22,6 +22,7 @@ from websockets.datastructures import Headers
 from websockets.http11 import Response
 
 PORT = int(os.environ.get("PORT", "3000"))
+HOST = os.environ.get("HOST", "0.0.0.0").strip() or "0.0.0.0"
 PUBLIC = (Path(__file__).parent / "public").resolve()
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
 DB_PATH = os.environ.get("DB_PATH") or ("/data/spyfall.db" if os.path.isdir("/data") else str(Path(__file__).parent / "spyfall.db"))
@@ -969,6 +970,15 @@ def process_request(connection, request):
     if upgrade.lower() == "websocket":
         return None
     path = request.path.split("?", 1)[0]
+    if path == "/healthz":
+        body = b"ok\n"
+        return Response(HTTPStatus.OK, "OK",
+                        Headers([
+                            ("Content-Type", "text/plain; charset=utf-8"),
+                            ("Content-Length", str(len(body))),
+                            ("Cache-Control", "no-store"),
+                        ]),
+                        body)
     if path == "/locations.json":
         body = json.dumps(LOCATIONS, ensure_ascii=False).encode("utf-8")
         return Response(HTTPStatus.OK, "OK",
@@ -1002,14 +1012,15 @@ def lan_ip() -> str | None:
 async def main():
     db_init()
     print("Spyfall is running.")
-    print(f"  Local:    http://localhost:{PORT}")
+    print(f"  Local:    http://localhost:{PORT}" if HOST in ("0.0.0.0", "::", "127.0.0.1") else f"  Bind:     http://{HOST}:{PORT}")
     ip = lan_ip()
-    if ip:
+    if ip and HOST in ("0.0.0.0", "::"):
         print(f"  LAN:      http://{ip}:{PORT}   (share this with players on the same wifi)")
     print(f"  DB:       {DB_PATH}")
     print(f"  Sign-in:  {'configured' if GOOGLE_CLIENT_ID else 'NOT configured (set GOOGLE_CLIENT_ID)'}")
     print("Press Ctrl+C to stop.")
-    async with serve(ws_handler, "0.0.0.0", PORT, process_request=process_request):
+    async with serve(ws_handler, HOST, PORT, process_request=process_request,
+                     ping_interval=20, ping_timeout=20):
         await asyncio.Future()
 
 

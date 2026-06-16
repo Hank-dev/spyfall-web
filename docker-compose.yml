@@ -1,0 +1,18 @@
+services:
+  spyfall-web:
+    build: .
+    image: spyfall-web:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      DB_PATH: /data/spyfall.db
+    ports:
+      - "3000:3000"
+    volumes:
+      - spyfall-data:/data
+
+volumes:
+  spyfall-data:
